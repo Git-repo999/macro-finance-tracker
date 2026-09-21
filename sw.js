@@ -7,7 +7,7 @@
  *
  * Bump CACHE_NAME whenever you deploy, so old caches get cleared on activate.
  */
-const CACHE_NAME = 'tracker-v1';
+const CACHE_NAME = 'tracker-v2';
 
 const ASSETS = [
   './',

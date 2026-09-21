@@ -63,7 +63,43 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 
 /* Header with theme toggle */
 .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.header-title { display: flex; align-items: center; gap: 8px; }
 .theme-toggle { background: var(--bg-card); border: 1px solid var(--border); border-radius: 50%; width: 38px; height: 38px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+.back-btn {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 50%;
+  width: 38px; height: 38px; flex: 0 0 38px; cursor: pointer; font-size: 1.2rem;
+  color: var(--text-primary); display: flex; align-items: center; justify-content: center;
+}
+.back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ===== Home screen: the two launch tiles ===== */
+.home-screen {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+  margin: 24px auto; max-width: 480px;
+}
+.home-tile {
+  aspect-ratio: 1 / 1; border: 1px solid var(--border); border-radius: 22px;
+  background: var(--bg-card); cursor: pointer; padding: 18px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.home-tile:hover, .home-tile:focus-visible {
+  transform: translateY(-3px); border-color: var(--accent);
+  box-shadow: 0 8px 26px var(--accent-glow); outline: none;
+}
+.home-tile:active { transform: translateY(0) scale(0.98); }
+.home-tile-icon { font-size: 2.6rem; line-height: 1; }
+.home-tile-label { font-size: 1rem; font-weight: 700; color: var(--text-primary); text-align: center; }
+.home-tile-sub { font-size: 0.72rem; color: var(--text-secondary); text-align: center; }
+.home-tile-macro .home-tile-icon { filter: drop-shadow(0 0 14px rgba(52,211,153,0.35)); }
+.home-tile-finance .home-tile-icon { filter: drop-shadow(0 0 14px rgba(124,92,255,0.4)); }
+
+@media (max-width: 380px) {
+  .home-screen { gap: 12px; margin: 16px auto; }
+  .home-tile { border-radius: 18px; padding: 12px; }
+  .home-tile-icon { font-size: 2rem; }
+}
 
 /* Navigation Tabs */
 .nav-tabs { display: flex; gap: 4px; margin: 10px 0; background: var(--bg-card); padding: 4px; border-radius: 14px; border: 1px solid var(--border); }
@@ -96,18 +132,29 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 <body>
 <div class="container">
 <div class="app-header">
-  <h1 id="appTitle">Macro Tracker</h1>
+  <div class="header-title">
+    <button class="back-btn" id="homeBackBtn" onclick="showHome()" title="Back to Home" aria-label="Back to Home" style="display:none;">←</button>
+    <h1 id="appTitle">Tracker</h1>
+  </div>
   <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Toggle Dark/Light">🌙</button>
 </div>
 
-<!-- Top-level module switcher -->
-<div class="nav-tabs module-switch">
-  <button class="active" id="modBtn-macro" onclick="showModule('macro')">🥗 Macro Tracker</button>
-  <button id="modBtn-finance" onclick="showModule('finance')">💰 Personal Finances</button>
+<!-- Home screen: two square tiles, shown at launch and via the back button -->
+<div id="home-screen" class="home-screen">
+  <button class="home-tile home-tile-macro" onclick="showModule('macro')">
+    <span class="home-tile-icon">🥗</span>
+    <span class="home-tile-label">Macro Tracker</span>
+    <span class="home-tile-sub" id="homeMacroSub">Calories &amp; activity</span>
+  </button>
+  <button class="home-tile home-tile-finance" onclick="showModule('finance')">
+    <span class="home-tile-icon">💰</span>
+    <span class="home-tile-label">Personal Finances</span>
+    <span class="home-tile-sub" id="homeFinanceSub">Loans &amp; investments</span>
+  </button>
 </div>
 
 <!-- Macro module -->
-<div id="module-macro">
+<div id="module-macro" style="display:none">
   <div class="nav-tabs">
     <button class="active" onclick="showTab('daily')">📅 Daily</button>
     <button onclick="showTab('weekly')">📊 Weekly</button>
@@ -613,7 +660,7 @@ let selectedFood = null;
 function init() {
   loadTheme();
   loadState();
-  renderAll();
+  showHome();
 }
 
 function loadTheme() {
@@ -711,15 +758,44 @@ function showToast(msg, type='success') {
   setTimeout(() => toast.remove(), 3000);
 }
 
+// Shows one of the two tiles' full module, hiding the home screen and the other module.
 function showModule(mod) {
   activeModule = mod;
+  document.getElementById('home-screen').style.display = 'none';
   document.getElementById('module-macro').style.display = mod === 'macro' ? 'block' : 'none';
   document.getElementById('module-finance').style.display = mod === 'finance' ? 'block' : 'none';
-  document.getElementById('modBtn-macro').classList.toggle('active', mod === 'macro');
-  document.getElementById('modBtn-finance').classList.toggle('active', mod === 'finance');
   document.getElementById('appTitle').textContent = mod === 'macro' ? 'Macro Tracker' : 'Personal Finances';
+  document.getElementById('homeBackBtn').style.display = 'flex';
   if (mod === 'macro') renderDaily();
   if (mod === 'finance') showFinTab(activeFinTab);
+}
+
+// Returns to the two-tile launch screen. Both modules keep their state in memory,
+// so re-opening a tile picks up exactly where you left off.
+function showHome() {
+  activeModule = null;
+  document.getElementById('module-macro').style.display = 'none';
+  document.getElementById('module-finance').style.display = 'none';
+  document.getElementById('homeBackBtn').style.display = 'none';
+  document.getElementById('appTitle').textContent = 'Tracker';
+  document.getElementById('home-screen').style.display = 'grid';
+  renderHomeSummary();
+}
+
+// Small "today" glance on each tile: today's calories, and any interest currently overdue.
+function renderHomeSummary() {
+  try {
+    const totals = calcDayTotals(getLog(state.currentDate));
+    const cal = Math.round(totals.cal || 0);
+    document.getElementById('homeMacroSub').textContent =
+      cal > 0 ? `${cal} kcal today` : 'Calories & activity';
+  } catch (e) { /* first run, before state is ready */ }
+
+  try {
+    const overdue = (state.finance.loans || []).reduce((s, l) => s + calcLoan(l).interestOutstanding, 0);
+    document.getElementById('homeFinanceSub').textContent =
+      overdue > 0.01 ? `${fmtMoney(overdue)} interest due` : 'Loans & investments';
+  } catch (e) { /* first run, before state is ready */ }
 }
 
 function showTab(tab) {
@@ -1323,8 +1399,12 @@ function clearAllData() {
   }
 }
 
+// Re-renders whatever is currently open (called after import/clear/reset).
+// Does NOT navigate anywhere, so it never yanks you back to the home screen mid-edit.
 function renderAll() {
-  renderDaily();
+  if (activeModule === 'macro') renderDaily();
+  else if (activeModule === 'finance') showFinTab(activeFinTab);
+  renderHomeSummary();
 }
 
 // ========================================================================
