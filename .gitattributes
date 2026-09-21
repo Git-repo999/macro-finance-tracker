@@ -1,0 +1,5 @@
+# Keep text files as LF in the repository regardless of the OS checking them out.
+* text=auto eol=lf
+
+# Binary assets: never touch line endings.
+*.png binary

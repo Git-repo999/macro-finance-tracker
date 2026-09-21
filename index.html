@@ -1,0 +1,2255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Macro &amp; Finance Tracker</title>
+
+<!-- ===== Installable web app (PWA) =====
+     All paths are relative, so this works from any GitHub Pages repo name. -->
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#7c5cff">
+<meta name="description" content="Personal calorie, macro and finance tracker. Works offline; all data stays on your device.">
+<!-- iOS home-screen support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tracker">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg-primary: #0f0f23;
+  --bg-card: rgba(35,36,72,0.8);
+  --text-primary: #eef0f6;
+  --text-secondary: #9ca3c4;
+  --accent: #7c5cff;
+  --accent-glow: rgba(124,92,255,0.3);
+  --border: rgba(124,92,255,0.2);
+  --protein-c: #f472b6;
+  --carbs-c: #facc15;
+  --fat-c: #60a5fa;
+  --cal-c: #34d399;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+}
+[data-theme="light"] {
+  --bg-primary: #f4f4f8;
+  --bg-card: #ffffff;
+  --text-primary: #1e1e2e;
+  --text-secondary: #6b7280;
+  --accent: #7c5cff;
+  --accent-glow: rgba(124,92,255,0.15);
+  --border: rgba(124,92,255,0.12);
+  --protein-c: #db2777;
+  --carbs-c: #ca8a04;
+  --fat-c: #2563eb;
+  --cal-c: #059669;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  min-height: 100vh; color: var(--text-primary);
+  /* Keep clear of the iOS notch and home indicator when running as an installed app. */
+  padding: calc(10px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right))
+           calc(10px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));
+  transition: background 0.3s, color 0.3s;
+}
+.container { max-width: 1200px; margin: 0 auto; }
+h1 { text-align: center; color: var(--accent); font-size: 1.8rem; margin: 10px 0; }
+h2 { color: var(--accent); font-size: 1.2rem; margin: 10px 0 8px; }
+h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
+
+/* Header with theme toggle */
+.app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.theme-toggle { background: var(--bg-card); border: 1px solid var(--border); border-radius: 50%; width: 38px; height: 38px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+
+/* Navigation Tabs */
+.nav-tabs { display: flex; gap: 4px; margin: 10px 0; background: var(--bg-card); padding: 4px; border-radius: 14px; border: 1px solid var(--border); }
+.nav-tabs button {
+  flex: 1; padding: 10px 16px; border: none; border-radius: 10px; cursor: pointer;
+  font-size: 0.85rem; font-weight: 600; transition: all 0.3s;
+  background: transparent; color: var(--text-secondary);
+}
+.nav-tabs button.active { background: var(--accent); color: #fff; box-shadow: 0 2px 10px var(--accent-glow); }
+.nav-tabs button:hover:not(.active) { color: var(--text-primary); }
+
+/* Cards */
+.card {
+  background: var(--bg-card); border-radius: 16px; padding: 16px;
+  margin: 10px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border: 1px solid var(--border);
+  transition: background 0.3s, border 0.3s;
+}
+
+/* Date Navigation */
+.date-nav { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 10px 0; }
+.date-nav button {
+  background: var(--accent); color: #fff; border: none; border-radius: 50%;
+  width: 36px; height: 36px; font-size: 1.1rem; cursor: pointer; font-weight: bold;
+}
+.date-nav button:hover { box-shadow: 0 2px 10px var(--accent-glow); }
+.date-display { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); text-align: center; }
+.date-display input[type="date"] { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="app-header">
+  <h1 id="appTitle">Macro Tracker</h1>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Toggle Dark/Light">🌙</button>
+</div>
+
+<!-- Top-level module switcher -->
+<div class="nav-tabs module-switch">
+  <button class="active" id="modBtn-macro" onclick="showModule('macro')">🥗 Macro Tracker</button>
+  <button id="modBtn-finance" onclick="showModule('finance')">💰 Personal Finances</button>
+</div>
+
+<!-- Macro module -->
+<div id="module-macro">
+  <div class="nav-tabs">
+    <button class="active" onclick="showTab('daily')">📅 Daily</button>
+    <button onclick="showTab('weekly')">📊 Weekly</button>
+    <button onclick="showTab('settings')">⚙️ Settings</button>
+  </div>
+  <div id="tab-daily"></div>
+  <div id="tab-weekly" style="display:none"></div>
+  <div id="tab-settings" style="display:none"></div>
+</div>
+
+<!-- Finance module -->
+<div id="module-finance" style="display:none">
+  <div class="nav-tabs">
+    <button class="active" onclick="showFinTab('lending')">🤝 Lending</button>
+    <button onclick="showFinTab('investments')">📈 Investments</button>
+  </div>
+  <div id="fintab-lending"></div>
+  <div id="fintab-investments" style="display:none"></div>
+</div>
+</div>
+<style>
+/* Progress Bars */
+.progress-container { margin: 5px 0; }
+.progress-label { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 3px; color: var(--text-secondary); }
+.progress-bar { height: 10px; border-radius: 5px; background: var(--bg-card); overflow: hidden; border: 1px solid var(--border); }
+.progress-fill { height: 100%; border-radius: 5px; transition: width 0.4s ease; }
+.protein-color { background: linear-gradient(90deg, #f472b6, #ec4899); }
+.carbs-color { background: linear-gradient(90deg, #facc15, #eab308); }
+.fat-color { background: linear-gradient(90deg, #60a5fa, #3b82f6); }
+.cal-color { background: linear-gradient(90deg, #34d399, #10b981); }
+
+/* Summary Cards */
+.macro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 10px 0; }
+.macro-card { text-align: center; padding: 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border); }
+.macro-card .value { font-size: 1.4rem; font-weight: 800; }
+.macro-card .label { font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; }
+
+/* Activity Section */
+.activity-row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+.checkbox-group { display: flex; align-items: center; gap: 5px; }
+.checkbox-group input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; }
+.checkbox-group label { font-size: 0.85rem; cursor: pointer; color: var(--text-primary); }
+.input-sm {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px; color: var(--text-primary); width: 100px; font-size: 0.85rem;
+}
+.input-sm:focus { outline: none; border-color: var(--accent); }
+
+/* Meal Sections */
+.meal-section { margin: 10px 0; }
+.meal-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }
+.meal-items { margin: 5px 0; }
+.meal-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+.meal-item:hover { background: var(--accent-glow); }
+.meal-item .remove-btn { background: var(--danger); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 0.7rem; }
+
+/* Food Search */
+.search-box { position: relative; margin: 8px 0; }
+.search-box input {
+  width: 100%; padding: 10px 15px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--bg-card); color: var(--text-primary); font-size: 0.9rem;
+}
+.search-box input:focus { outline: none; border-color: var(--accent); }
+.search-results {
+  position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 10px; max-height: 200px;
+  overflow-y: auto; z-index: 100; display: none;
+}
+.search-result-item { padding: 10px 14px; cursor: pointer; font-size: 0.8rem; border-bottom: 1px solid var(--border); color: var(--text-primary); }
+.search-result-item:hover { background: var(--accent-glow); }
+.search-result-item .food-macros { color: var(--text-secondary); font-size: 0.7rem; }
+</style>
+<style>
+/* Food DB Tab */
+.food-list { max-height: 400px; overflow-y: auto; }
+.food-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr auto; gap: 5px; padding: 6px 8px; font-size: 0.75rem; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.food-row:hover { background: rgba(255,255,255,0.05); }
+.food-row-header { font-weight: bold; color: #00d4ff; background: rgba(0,212,255,0.1); border-radius: 8px; }
+.food-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 10px 0; }
+.food-form input, .food-form select {
+  padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08); color: #e0e0e0; font-size: 0.8rem;
+}
+.food-form input:focus { outline: none; border-color: #00d4ff; }
+
+/* Buttons */
+.btn { padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; }
+.btn-primary { background: #00d4ff; color: #1a1a2e; }
+.btn-primary:hover { background: #00b8d4; }
+.btn-danger { background: #e74c3c; color: white; }
+.btn-danger:hover { background: #c0392b; }
+.btn-success { background: #27ae60; color: white; }
+.btn-success:hover { background: #229954; }
+.btn-sm { padding: 4px 8px; font-size: 0.75rem; }
+
+/* Settings */
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.setting-item { display: flex; flex-direction: column; gap: 4px; }
+.setting-item label { font-size: 0.8rem; color: #aaa; }
+.setting-item input, .setting-item select {
+  padding: 8px; border-radius: 8px; border: 1px solid rgba(0,212,255,0.3);
+  background: rgba(15,23,42,0.8); color: #f1f5f9; appearance: none; -webkit-appearance: none;
+}
+.setting-item select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300d4ff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+}
+.setting-item select option { background: #1e293b; color: #f1f5f9; }
+.setting-item input:focus, .setting-item select:focus { outline: none; border-color: #00d4ff; box-shadow: 0 0 6px rgba(0,212,255,0.2); }
+
+/* Weekly View */
+.weekly-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin: 10px 0; }
+.day-card { padding: 8px; border-radius: 8px; background: rgba(255,255,255,0.05); text-align: center; font-size: 0.75rem; }
+.day-card.today { border: 2px solid #00d4ff; }
+.day-card .day-name { font-weight: bold; color: #ffd700; margin-bottom: 3px; }
+.day-card .day-cal { font-size: 1rem; font-weight: bold; }
+.surplus { color: #e74c3c; }
+.on-track { color: #27ae60; }
+
+/* Toast */
+.toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 10px; color: white; font-size: 0.85rem; z-index: 9999; animation: slideIn 0.3s ease; }
+.toast.success { background: #27ae60; }
+.toast.error { background: #e74c3c; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* Add Food Modal - Improved Colors */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay.active { display: flex; }
+.modal { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 18px; padding: 24px; width: 92%; max-width: 420px; border: 2px solid rgba(0,212,255,0.4); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.modal h3 { margin-bottom: 18px; color: #00d4ff; font-size: 1.2rem; }
+.modal-form { display: flex; flex-direction: column; gap: 12px; }
+.modal-form input { padding: 12px 15px; border-radius: 10px; border: 1px solid rgba(0,212,255,0.3); background: rgba(15,23,42,0.8); color: #f1f5f9; font-size: 0.95rem; }
+.modal-form input:focus { border-color: #00d4ff; outline: none; box-shadow: 0 0 8px rgba(0,212,255,0.2); }
+.modal-form select { padding: 12px 15px; border-radius: 10px; border: 1px solid rgba(0,212,255,0.3); background: rgba(15,23,42,0.8); color: #f1f5f9; font-size: 0.95rem; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300d4ff' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+.modal-form select:focus { border-color: #00d4ff; outline: none; box-shadow: 0 0 8px rgba(0,212,255,0.2); }
+.modal-form select option { background: #1e293b; color: #f1f5f9; padding: 10px; }
+.modal-buttons { display: flex; gap: 12px; margin-top: 15px; }
+.modal-buttons .btn { flex: 1; padding: 12px; font-size: 1rem; }
+
+/* Large Add Food Button */
+.btn-add-food { padding: 14px 28px; font-size: 1.1rem; border-radius: 12px; background: linear-gradient(135deg, #00d4ff, #0984e3); color: #fff; font-weight: 700; box-shadow: 0 4px 15px rgba(0,212,255,0.3); margin: 10px 0; display: block; width: 100%; text-align: center; border: none; cursor: pointer; transition: all 0.3s; }
+.btn-add-food:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,212,255,0.4); }
+
+/* Quick Add Section */
+.quick-add-section { margin: 10px 0; }
+.quick-add-grid { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.quick-add-btn { padding: 8px 14px; border-radius: 20px; border: 1px solid rgba(0,212,255,0.3); background: rgba(0,212,255,0.1); color: #00d4ff; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.quick-add-btn:hover { background: rgba(0,212,255,0.3); transform: scale(1.05); }
+
+/* Backup Reminder Banner */
+.backup-banner { background: linear-gradient(90deg, rgba(255,215,0,0.15), rgba(255,215,0,0.05)); border: 1px solid rgba(255,215,0,0.3); border-radius: 10px; padding: 10px 15px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; }
+.backup-banner span { color: #ffd700; font-size: 0.8rem; }
+.backup-banner button { font-size: 0.75rem; }
+
+/* Import/Export */
+.import-area { width: 100%; min-height: 100px; background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.3); border-radius: 8px; padding: 10px; color: #e0e0e0; font-size: 0.8rem; resize: vertical; }
+
+@media (max-width: 600px) {
+  .food-row { grid-template-columns: 2fr 1fr 1fr auto; }
+  .food-row .hide-mobile { display: none; }
+  .weekly-grid { grid-template-columns: repeat(4, 1fr); }
+  .macro-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ===== Personal Finances ===== */
+.module-switch button { font-size: 0.9rem; padding: 12px 16px; }
+.fin-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.fin-table th { text-align: left; padding: 8px 6px; color: var(--accent); border-bottom: 1px solid var(--border); font-weight: 700; }
+.fin-table td { padding: 8px 6px; border-bottom: 1px solid var(--border); color: var(--text-primary); }
+.fin-table tr:hover td { background: var(--accent-glow); }
+.fin-pos { color: var(--success); font-weight: 700; }
+.fin-neg { color: var(--danger); font-weight: 700; }
+.fin-muted { color: var(--text-secondary); font-size: 0.75rem; }
+.fin-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin: 10px 0; }
+.fin-form input, .fin-form select {
+  padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg-card); color: var(--text-primary); font-size: 0.85rem; width: 100%;
+}
+.fin-form input:focus, .fin-form select:focus { outline: none; border-color: var(--accent); }
+.fin-entry { border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin: 10px 0; background: var(--bg-card); }
+.fin-entry-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+.fin-entry-head .name { font-weight: 700; font-size: 0.95rem; }
+.fin-chip { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.7rem; background: var(--accent-glow); color: var(--accent); }
+.fin-sub { display: flex; gap: 6px; align-items: flex-end; flex-wrap: wrap; margin-top: 8px; }
+.fin-sub input, .fin-sub select { padding: 7px 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 0.8rem; }
+/* ---- Hero summary ---- */
+.fin-hero {
+  background: linear-gradient(135deg, var(--accent-glow), transparent 70%);
+  border: 1px solid var(--border); border-radius: 18px; padding: 18px; margin: 10px 0;
+}
+.fin-hero .h-lbl { font-size: 0.7rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-secondary); font-weight: 700; }
+.fin-hero .h-val { font-size: 2.1rem; font-weight: 800; line-height: 1.1; margin-top: 5px; color: var(--text-primary); }
+.fin-hero .h-sub { font-size: 0.78rem; color: var(--text-secondary); margin-top: 5px; }
+.fin-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(126px, 1fr)); gap: 8px; margin-top: 14px; }
+.fin-tile { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+.fin-tile .t-val { font-size: 1.05rem; font-weight: 800; }
+.fin-tile .t-lbl { font-size: 0.64rem; color: var(--text-secondary); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ---- Section header + inline add forms ---- */
+.fin-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 18px 0 2px; }
+.fin-sec-head h3 { margin: 0; }
+.fin-ghost-btn {
+  background: transparent; border: 1px dashed var(--accent); color: var(--accent);
+  border-radius: 10px; padding: 8px 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.fin-ghost-btn:hover { background: var(--accent-glow); }
+.fin-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin: 8px 0; }
+
+/* ---- Filter chips ---- */
+.fin-filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 2px; }
+.fin-filter {
+  padding: 6px 13px; border-radius: 16px; border: 1px solid var(--border); background: transparent;
+  color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; cursor: pointer;
+}
+.fin-filter:hover { color: var(--text-primary); }
+.fin-filter.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ---- Loan card ---- */
+.loan-card { background: var(--bg-card); border: 1px solid var(--border); border-left-width: 3px; border-radius: 16px; padding: 14px; margin: 10px 0; }
+.loan-card.is-due { border-left-color: var(--danger); }
+.loan-card.is-adv { border-left-color: var(--fat-c); }
+.loan-card.is-ok { border-left-color: var(--success); }
+.loan-card.is-cleared { border-left-color: var(--text-secondary); }
+.loan-top { display: flex; align-items: flex-start; gap: 11px; }
+.loan-avatar {
+  width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.9rem; background: var(--accent-glow); color: var(--accent);
+}
+.loan-id { flex: 1; min-width: 0; }
+.loan-name { font-weight: 700; font-size: 1rem; }
+.loan-meta { font-size: 0.73rem; color: var(--text-secondary); margin-top: 3px; }
+.icon-btn {
+  background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
+  border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 0.78rem; flex: 0 0 auto;
+}
+.icon-btn:hover { border-color: var(--danger); color: var(--danger); }
+.loan-progress { margin: 13px 0 2px; }
+.loan-progress .p-top { display: flex; justify-content: space-between; font-size: 0.71rem; color: var(--text-secondary); margin-bottom: 4px; }
+.loan-bar { height: 7px; border-radius: 4px; background: var(--bg-primary); border: 1px solid var(--border); overflow: hidden; }
+.loan-bar > span { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #34d399, #10b981); transition: width 0.4s ease; }
+.loan-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.act-btn { flex: 1; min-width: 120px; border: none; border-radius: 10px; padding: 10px 12px; font-size: 0.81rem; font-weight: 700; cursor: pointer; color: #fff; }
+.act-int { background: var(--success); }
+.act-prin { background: var(--fat-c); }
+.act-btn:hover { filter: brightness(1.08); }
+
+/* ---- Investment holding card ---- */
+.inv-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 13px; margin: 9px 0; }
+.inv-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.inv-name { font-weight: 700; font-size: 0.95rem; }
+.inv-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin-top: 11px; flex-wrap: wrap; }
+.inv-row .col { min-width: 84px; }
+.inv-row .c-lbl { font-size: 0.64rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+.inv-row .c-val { font-size: 0.95rem; font-weight: 800; margin-top: 2px; }
+.inv-input {
+  width: 118px; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg-primary); color: var(--text-primary); font-size: 0.88rem; font-weight: 700;
+}
+.inv-input:focus { outline: none; border-color: var(--accent); }
+.alloc-bar { height: 5px; border-radius: 3px; background: var(--bg-primary); border: 1px solid var(--border); overflow: hidden; margin-top: 11px; }
+.alloc-bar > span { display: block; height: 100%; background: linear-gradient(90deg, #7c5cff, #60a5fa); }
+
+/* ---- Empty state ---- */
+.fin-empty { text-align: center; padding: 30px 16px; border: 1px dashed var(--border); border-radius: 16px; margin: 10px 0; }
+.fin-empty .e-icon { font-size: 2rem; }
+.fin-empty .e-title { font-weight: 700; margin-top: 8px; }
+.fin-empty .e-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
+
+.loan-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 2px; }
+.loan-stat { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+.loan-stat .s-val { font-size: 1rem; font-weight: 800; }
+.loan-stat .s-lbl { font-size: 0.63rem; color: var(--text-secondary); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.03em; }
+.status-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+.status-ok { background: rgba(16,185,129,0.18); color: var(--success); }
+.status-due { background: rgba(239,68,68,0.18); color: var(--danger); }
+.status-adv { background: rgba(96,165,250,0.18); color: var(--fat-c); }
+.fin-toggle { cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; padding: 8px 0; font-size: 0.85rem; font-weight: 600; color: var(--accent); border-top: 1px solid var(--border); margin-top: 10px; }
+.fin-toggle .chev { transition: transform 0.2s; }
+.month-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0; flex-wrap: wrap; gap: 4px; }
+.month-row .m-title { font-weight: 700; font-size: 0.85rem; }
+.pill { display:inline-block; padding: 2px 9px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; }
+.pill-ok { background: rgba(16,185,129,0.18); color: var(--success); }
+.pill-due { background: rgba(239,68,68,0.18); color: var(--danger); }
+.pill-adv { background: rgba(96,165,250,0.18); color: var(--fat-c); }
+.add-pay-btn { background: transparent; border: 1px dashed var(--accent); color: var(--accent); border-radius: 8px; padding: 7px 12px; font-size: 0.8rem; cursor: pointer; font-weight: 600; }
+.add-pay-btn:hover { background: var(--accent-glow); }
+
+@media (max-width: 600px) {
+  .fin-table { font-size: 0.72rem; }
+  .fin-table th, .fin-table td { padding: 6px 3px; }
+  .fin-hero { padding: 15px; }
+  .fin-hero .h-val { font-size: 1.7rem; }
+  .fin-tiles { grid-template-columns: repeat(2, 1fr); }
+  .loan-stats { grid-template-columns: 1fr; }
+  .fin-sec-head { flex-direction: column; align-items: stretch; }
+  .fin-ghost-btn { width: 100%; }
+}
+</style>
+
+<!-- Add Food to Meal Modal -->
+<div class="modal-overlay" id="addFoodModal">
+<div class="modal">
+  <h3>➕ Add Food to Meal</h3>
+  <div class="modal-form">
+    <div class="search-box">
+      <input type="text" id="modalFoodSearch" placeholder="🔍 Search food..." oninput="searchFoodModal(this.value)">
+      <div class="search-results" id="modalSearchResults"></div>
+    </div>
+    <select id="modalMealSelect">
+      <option value="0">🍳 Meal 1 — Breakfast</option>
+      <option value="1">🥗 Meal 2 — Lunch</option>
+      <option value="2">🍌 Meal 3 — Snack</option>
+      <option value="3">🍛 Meal 4 — Dinner</option>
+    </select>
+    <input type="number" id="modalQty" placeholder="Quantity (g or pcs)" min="0.25" step="0.25" value="1">
+    <div id="modalFoodPreview" style="font-size:0.85rem; color:#94a3b8; padding: 8px; background: rgba(0,212,255,0.05); border-radius: 8px; min-height: 20px;"></div>
+    <div class="modal-buttons">
+      <button class="btn btn-primary" onclick="addFoodToMeal()">✅ Add to Meal</button>
+      <button class="btn btn-danger" onclick="closeModal()">✕ Cancel</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- New Food Modal -->
+<div class="modal-overlay" id="newFoodModal">
+<div class="modal">
+  <h3>🆕 Add New Food to Database</h3>
+  <div class="modal-form">
+    <input type="text" id="nfName" placeholder="Food Name *">
+    <input type="number" id="nfQty" placeholder="Quantity (e.g. 100) *" step="0.01">
+    <input type="text" id="nfUnit" placeholder="Unit (grams, pc, etc.) *">
+    <input type="number" id="nfProtein" placeholder="Protein (g)" step="0.1" oninput="autoCalcCalories()">
+    <input type="number" id="nfCarbs" placeholder="Carbs (g)" step="0.1" oninput="autoCalcCalories()">
+    <input type="number" id="nfFat" placeholder="Fat (g)" step="0.1" oninput="autoCalcCalories()">
+    <input type="number" id="nfCal" placeholder="Calories (kcal) — auto-calculated" step="1">
+    <div id="nfCalcHint" style="font-size:0.75rem;color:#94a3b8;">Calories auto-calculate: P×4 + C×4 + F×9</div>
+    <input type="number" id="nfFibre" placeholder="Fibre (g)" step="0.1">
+    <div class="modal-buttons">
+      <button class="btn btn-primary" onclick="saveNewFood()">💾 Save Food</button>
+      <button class="btn btn-danger" onclick="closeNewFoodModal()">✕ Cancel</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Direct Calorie Log Modal -->
+<div class="modal-overlay" id="directLogModal">
+<div class="modal">
+  <h3>🍽️ Log Meal Directly</h3>
+  <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:12px;">Add calories & macros directly without selecting from the food database.</p>
+  <div class="modal-form">
+    <input type="text" id="dlName" placeholder="Meal description (e.g. Restaurant lunch)">
+    <select id="dlMealSelect">
+      <option value="0">🍳 Meal 1 — Breakfast</option>
+      <option value="1">🥗 Meal 2 — Lunch</option>
+      <option value="2">🍌 Meal 3 — Snack</option>
+      <option value="3">🍛 Meal 4 — Dinner</option>
+    </select>
+    <input type="number" id="dlProtein" placeholder="Protein (g)" step="0.1" oninput="autoCalcDirectCal()">
+    <input type="number" id="dlCarbs" placeholder="Carbs (g)" step="0.1" oninput="autoCalcDirectCal()">
+    <input type="number" id="dlFat" placeholder="Fat (g)" step="0.1" oninput="autoCalcDirectCal()">
+    <input type="number" id="dlCal" placeholder="Calories (kcal) — auto or manual" step="1">
+    <div id="dlCalcHint" style="font-size:0.75rem;color:#94a3b8;">Calories auto-calculate from macros, or enter manually</div>
+    <div class="modal-buttons">
+      <button class="btn btn-primary" onclick="saveDirectLog()">✅ Log It</button>
+      <button class="btn btn-danger" onclick="closeDirectLogModal()">✕ Cancel</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ========== DEFAULT FOOD DATABASE ==========
+const DEFAULT_FOODS = [
+  {name:"Almonds",qty:100,unit:"grams",cp:false,protein:21,carbs:20,fat:49,cal:605,fibre:0},
+  {name:"Amul Lassi",qty:1,unit:"pack",cp:true,protein:15,carbs:12,fat:2,cal:123,fibre:0},
+  {name:"Apple",qty:100,unit:"grams",cp:false,protein:0,carbs:14,fat:0,cal:56,fibre:0},
+  {name:"Ashirvad Atta",qty:100,unit:"grams",cp:false,protein:10.7,carbs:76,fat:1,cal:359,fibre:10},
+  {name:"Avocados",qty:100,unit:"grams",cp:false,protein:2,carbs:2,fat:15,cal:151,fibre:0},
+  {name:"Bajra Flour",qty:100,unit:"grams",cp:false,protein:12,carbs:68,fat:5,cal:365,fibre:0},
+  {name:"Bananas",qty:100,unit:"grams",cp:false,protein:1,carbs:23,fat:0,cal:96,fibre:0},
+  {name:"Basa Fish",qty:100,unit:"grams",cp:true,protein:23,carbs:0,fat:3,cal:119,fibre:0},
+  {name:"Beetroot",qty:100,unit:"grams",cp:false,protein:2,carbs:10,fat:0,cal:48,fibre:0},
+  {name:"Black Beans",qty:100,unit:"grams",cp:false,protein:21,carbs:63,fat:1,cal:345,fibre:0},
+  {name:"Black Coffee",qty:1,unit:"pc",cp:false,protein:0,carbs:0,fat:0,cal:0,fibre:0},
+  {name:"Black Gram (Mina Pappu)",qty:100,unit:"grams",cp:false,protein:25,carbs:60,fat:2,cal:358,fibre:0},
+  {name:"Boiled Chana",qty:100,unit:"grams",cp:false,protein:9,carbs:24,fat:1,cal:141,fibre:0},
+  {name:"Boneless Chicken",qty:100,unit:"grams",cp:true,protein:27,carbs:0,fat:11,cal:207,fibre:0},
+  {name:"Broccoli",qty:100,unit:"grams",cp:false,protein:3,carbs:7,fat:0,cal:40,fibre:0},
+  {name:"Brown Bread",qty:1,unit:"pc",cp:false,protein:2,carbs:12,fat:1,cal:65,fibre:0},
+  {name:"Butter/Ghee",qty:100,unit:"grams",cp:false,protein:0,carbs:0,fat:80,cal:720,fibre:0},
+  {name:"Carrots",qty:100,unit:"grams",cp:false,protein:1,carbs:10,fat:0,cal:44,fibre:3},
+  {name:"Cashews",qty:100,unit:"grams",cp:false,protein:18,carbs:27,fat:44,cal:576,fibre:0},
+  {name:"Cauliflower",qty:100,unit:"grams",cp:false,protein:2,carbs:5,fat:0,cal:28,fibre:0},
+  {name:"Chana Dal",qty:100,unit:"grams",cp:false,protein:22,carbs:63,fat:4,cal:376,fibre:0},
+  {name:"Chapati",qty:100,unit:"grams",cp:false,protein:8,carbs:50,fat:3,cal:258,fibre:10},
+  {name:"Cheese Slice",qty:1,unit:"pc",cp:true,protein:2,carbs:1,fat:5,cal:57,fibre:0},
+  {name:"Chicken Breast",qty:100,unit:"grams",cp:true,protein:27,carbs:0,fat:4,cal:144,fibre:0},
+  {name:"Chicken Biryani",qty:250,unit:"grams",cp:true,protein:16,carbs:56,fat:8,cal:360,fibre:0},
+  {name:"Chicken Liver",qty:100,unit:"grams",cp:true,protein:26,carbs:1,fat:6,cal:162,fibre:0},
+  {name:"Chicken Thighs",qty:100,unit:"grams",cp:true,protein:24,carbs:0,fat:8,cal:168,fibre:0},
+  {name:"Chickpeas",qty:100,unit:"grams",cp:false,protein:19,carbs:61,fat:6,cal:374,fibre:0},
+  {name:"Coconut",qty:100,unit:"grams",cp:false,protein:3,carbs:6,fat:33,cal:333,fibre:0},
+  {name:"Coconut Oil",qty:100,unit:"grams",cp:false,protein:0,carbs:0,fat:90,cal:810,fibre:0},
+  {name:"Cooked Brown Rice",qty:100,unit:"grams",cp:false,protein:2,carbs:22,fat:1,cal:105,fibre:2},
+  {name:"Cooked Chicken Curry",qty:200,unit:"grams",cp:true,protein:23,carbs:10,fat:14,cal:258,fibre:0},
+  {name:"Cooked White Rice",qty:158,unit:"grams",cp:false,protein:4,carbs:45,fat:1,cal:206,fibre:1},
+  {name:"Corn",qty:100,unit:"grams",cp:false,protein:9,carbs:74,fat:5,cal:377,fibre:0},
+  {name:"Cow Milk",qty:100,unit:"ml",cp:true,protein:3,carbs:5,fat:3,cal:59,fibre:0},
+  {name:"Cucumber",qty:100,unit:"grams",cp:false,protein:1,carbs:4,fat:0,cal:20,fibre:1},
+  {name:"Curd",qty:100,unit:"grams",cp:true,protein:3,carbs:4,fat:3,cal:55,fibre:0},
+  {name:"Dark Chocolate",qty:100,unit:"grams",cp:false,protein:12,carbs:51,fat:30,cal:522,fibre:0},
+  {name:"Egg Whites (Hen)",qty:1,unit:"pc",cp:true,protein:3.6,carbs:0,fat:0,cal:14,fibre:0},
+  {name:"Fish Oil",qty:1,unit:"pc",cp:false,protein:0,carbs:0,fat:2,cal:16,fibre:0},
+  {name:"Freedom Vegetables Oil",qty:1,unit:"grams",cp:false,protein:0,carbs:0,fat:1,cal:9,fibre:0},
+  {name:"Grapes",qty:100,unit:"grams",cp:false,protein:1,carbs:17,fat:0,cal:72,fibre:0},
+  {name:"Guava",qty:100,unit:"grams",cp:false,protein:2.6,carbs:14,fat:1,cal:75,fibre:0},
+  {name:"Ice Cream",qty:1,unit:"scoop",cp:false,protein:2,carbs:16,fat:8,cal:144,fibre:0},
+  {name:"Idli (Medium)",qty:1,unit:"pc",cp:false,protein:2,carbs:12,fat:0,cal:56,fibre:0},
+  {name:"Jaggery",qty:100,unit:"grams",cp:false,protein:0,carbs:99,fat:0,cal:396,fibre:0},
+  {name:"Kidney Beans (Rajma)",qty:100,unit:"grams",cp:false,protein:24,carbs:60,fat:1,cal:345,fibre:0},
+  {name:"Kiwi",qty:100,unit:"grams",cp:false,protein:1,carbs:15,fat:1,cal:73,fibre:0},
+  {name:"Lentils",qty:100,unit:"grams",cp:false,protein:26,carbs:60,fat:1,cal:353,fibre:0},
+  {name:"Mackerel",qty:100,unit:"grams",cp:true,protein:19,carbs:0,fat:25,cal:301,fibre:0},
+  {name:"Masoor Dal",qty:100,unit:"grams",cp:false,protein:9,carbs:26,fat:3,cal:167,fibre:0},
+  {name:"MB Biozyme Whey",qty:1,unit:"scoop",cp:true,protein:25,carbs:6,fat:2,cal:140,fibre:0},
+  {name:"Mixed Fruits",qty:100,unit:"grams",cp:false,protein:1,carbs:17,fat:0,cal:72,fibre:0},
+  {name:"Mixed Nuts",qty:100,unit:"grams",cp:false,protein:18,carbs:20,fat:54,cal:638,fibre:0},
+  {name:"Mixed Seeds",qty:38,unit:"grams",cp:false,protein:8,carbs:13,fat:13,cal:201,fibre:0},
+  {name:"Muesli",qty:100,unit:"grams",cp:false,protein:10,carbs:78,fat:5,cal:394,fibre:0},
+  {name:"Mung Beans",qty:100,unit:"grams",cp:false,protein:24,carbs:63,fat:1,cal:357,fibre:0},
+  {name:"Mushroom",qty:100,unit:"grams",cp:false,protein:3,carbs:3,fat:0,cal:24,fibre:0},
+  {name:"Mutton Curry",qty:250,unit:"grams",cp:true,protein:24,carbs:8,fat:28,cal:380,fibre:0},
+  {name:"Oats",qty:100,unit:"grams",cp:false,protein:12,carbs:66,fat:9,cal:393,fibre:0},
+  {name:"Olive Oil",qty:100,unit:"grams",cp:false,protein:0,carbs:0,fat:90,cal:810,fibre:0},
+  {name:"Onions",qty:100,unit:"grams",cp:false,protein:1.4,carbs:10,fat:0,cal:47,fibre:0},
+  {name:"Orange",qty:100,unit:"grams",cp:false,protein:1,carbs:12,fat:0,cal:52,fibre:0},
+  {name:"Paneer",qty:100,unit:"grams",cp:true,protein:18,carbs:1,fat:25,cal:301,fibre:0},
+  {name:"Paneer Homemade",qty:100,unit:"grams",cp:true,protein:22,carbs:4,fat:9,cal:185,fibre:0},
+  {name:"Papaya",qty:100,unit:"grams",cp:false,protein:1,carbs:11,fat:0,cal:48,fibre:0},
+  {name:"Pasta",qty:100,unit:"grams",cp:false,protein:13,carbs:75,fat:2,cal:370,fibre:0},
+  {name:"Peanut Butter",qty:1,unit:"scoop",cp:false,protein:4,carbs:4,fat:8,cal:104,fibre:0},
+  {name:"Peanuts",qty:100,unit:"grams",cp:false,protein:26,carbs:16,fat:49,cal:609,fibre:0},
+  {name:"Pineapple",qty:100,unit:"grams",cp:false,protein:1,carbs:13,fat:0,cal:56,fibre:0},
+  {name:"Plain Dosa",qty:1,unit:"pc",cp:false,protein:3,carbs:22,fat:1,cal:109,fibre:0},
+  {name:"Poha",qty:100,unit:"grams",cp:false,protein:8,carbs:76,fat:2,cal:354,fibre:0},
+  {name:"Pomegranate",qty:100,unit:"grams",cp:false,protein:1,carbs:18,fat:0,cal:76,fibre:0},
+  {name:"Prawns",qty:100,unit:"grams",cp:true,protein:21,carbs:0,fat:1,cal:93,fibre:0},
+  {name:"Protein Bar",qty:1,unit:"bar",cp:true,protein:20,carbs:25,fat:9,cal:220,fibre:0},
+  {name:"Quinoa",qty:100,unit:"grams",cp:false,protein:14,carbs:64,fat:6,cal:366,fibre:0},
+  {name:"Ragi Flour",qty:100,unit:"grams",cp:false,protein:11,carbs:75,fat:2,cal:362,fibre:4},
+  {name:"Salmon",qty:100,unit:"grams",cp:true,protein:20,carbs:0,fat:13,cal:197,fibre:0},
+  {name:"Sambar (Medium Cup)",qty:1,unit:"bowl",cp:false,protein:4,carbs:20,fat:5,cal:141,fibre:0},
+  {name:"Soy Chunks",qty:100,unit:"grams",cp:true,protein:52,carbs:33,fat:1,cal:349,fibre:0},
+  {name:"Sprouts",qty:100,unit:"grams",cp:false,protein:24,carbs:47,fat:1,cal:293,fibre:0},
+  {name:"Strawberries",qty:100,unit:"grams",cp:false,protein:1,carbs:8,fat:0,cal:36,fibre:0},
+  {name:"Sweet Potato",qty:100,unit:"grams",cp:false,protein:2,carbs:20,fat:0,cal:88,fibre:0},
+  {name:"Tofu",qty:100,unit:"grams",cp:false,protein:8,carbs:2,fat:4,cal:76,fibre:0},
+  {name:"Tomatoes",qty:100,unit:"grams",cp:false,protein:0.9,carbs:4,fat:0,cal:21,fibre:2},
+  {name:"Tuna",qty:100,unit:"grams",cp:true,protein:23,carbs:0,fat:5,cal:137,fibre:0},
+  {name:"Uncooked White Rice",qty:100,unit:"grams",cp:false,protein:7,carbs:80,fat:1,cal:357,fibre:0},
+  {name:"Upma (Medium Cup)",qty:1,unit:"bowl",cp:false,protein:6,carbs:46,fat:4,cal:244,fibre:0},
+  {name:"Vegetable Curry",qty:100,unit:"grams",cp:false,protein:3,carbs:12,fat:4,cal:96,fibre:0},
+  {name:"Vegetable Salad",qty:100,unit:"grams",cp:false,protein:1,carbs:10,fat:0,cal:44,fibre:0},
+  {name:"Walnuts",qty:100,unit:"grams",cp:false,protein:15,carbs:7,fat:65,cal:673,fibre:0},
+  {name:"Watermelon",qty:100,unit:"grams",cp:false,protein:1,carbs:8,fat:0,cal:36,fibre:0},
+  {name:"Whey Isolate",qty:1,unit:"scoop",cp:true,protein:27,carbs:2,fat:1,cal:118,fibre:0},
+  {name:"Whey Protein",qty:1,unit:"scoop",cp:true,protein:24,carbs:4,fat:2,cal:130,fibre:0},
+  {name:"White Bread",qty:1,unit:"slice",cp:false,protein:2,carbs:12,fat:1,cal:65,fibre:0},
+  {name:"White Potato",qty:100,unit:"grams",cp:false,protein:2,carbs:17,fat:0,cal:76,fibre:0},
+  {name:"Whole Eggs (Hen)",qty:1,unit:"pc",cp:true,protein:6,carbs:1,fat:5,cal:73,fibre:0},
+  {name:"Pesarattu",qty:1,unit:"pc",cp:false,protein:5,carbs:15,fat:5,cal:125,fibre:0},
+  {name:"Puri",qty:1,unit:"pc",cp:false,protein:2.3,carbs:12,fat:10,cal:147,fibre:0},
+  {name:"Rava Dosa",qty:1,unit:"pc",cp:false,protein:4,carbs:23,fat:5,cal:153,fibre:0},
+  {name:"Red Gram (Kandi Pappu)",qty:100,unit:"grams",cp:false,protein:22,carbs:63,fat:2,cal:358,fibre:0},
+  {name:"Rohu",qty:100,unit:"grams",cp:true,protein:17,carbs:4,fat:1,cal:93,fibre:0},
+  {name:"Shrimps",qty:100,unit:"grams",cp:true,protein:20,carbs:0,fat:1,cal:89,fibre:0},
+  {name:"Sunflower Seeds",qty:46,unit:"grams",cp:false,protein:9,carbs:7,fat:23,cal:271,fibre:0},
+  {name:"Coconut Chutney",qty:1,unit:"bowl",cp:false,protein:2,carbs:8,fat:19,cal:211,fibre:0},
+  {name:"Peanut Chutney",qty:100,unit:"grams",cp:false,protein:26,carbs:17,fat:60,cal:712,fibre:0}
+];
+
+// ========== APP STATE ==========
+let state = {
+  currentDate: new Date().toISOString().split('T')[0],
+  targets: { weight: 85, activity: 'Sedentary', maintenance: 2442, dailyCal: 1600, protein: 153, weeklyCal: 11550 },
+  foodDB: [],
+  dailyLogs: {},
+  finance: {
+    loans: [],       // { id, borrower, principal, rate, startDate, note, payments: [{ id, date, amount }] }
+    investments: []  // { id, name, type, invested, current, note }
+  }
+};
+
+let activeModule = 'macro';
+let activeFinTab = 'lending';
+
+let selectedFood = null;
+
+// ========== INITIALIZATION ==========
+function init() {
+  loadTheme();
+  loadState();
+  renderAll();
+}
+
+function loadTheme() {
+  const theme = localStorage.getItem('macroTrackerTheme') || 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('macroTrackerTheme', next);
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('calorieTrackerState');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      state.targets = parsed.targets || state.targets;
+      state.foodDB = parsed.foodDB || DEFAULT_FOODS.slice();
+      state.dailyLogs = parsed.dailyLogs || {};
+      state.finance = parsed.finance || { loans: [], investments: [] };
+      if (!state.finance.loans) state.finance.loans = [];
+      if (!state.finance.investments) state.finance.investments = [];
+      // Migrate loans to the reducing-balance model (interest/principal payment lists)
+      state.finance.loans.forEach(l => {
+        if (!l.interestPayments) l.interestPayments = [];
+        if (!l.principalPayments) l.principalPayments = [];
+        // Old single "payments" list is treated as interest payments
+        if (Array.isArray(l.payments)) {
+          l.interestPayments = l.interestPayments.concat(l.payments);
+          delete l.payments;
+        }
+      });
+    } else {
+      state.foodDB = DEFAULT_FOODS.slice();
+    }
+  } catch(e) {
+    console.error('Failed to load state:', e);
+    state.foodDB = DEFAULT_FOODS.slice();
+    showToast('Data could not be loaded. Starting fresh.', 'error');
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('calorieTrackerState', JSON.stringify(state));
+  } catch(e) {
+    showToast('Failed to save data! Storage may be full.', 'error');
+  }
+}
+
+// ========== HELPERS ==========
+function getDayName(dateStr) {
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  return days[new Date(dateStr).getDay()];
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${getDayName(dateStr)}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function getLog(dateStr) {
+  if (!state.dailyLogs[dateStr]) {
+    state.dailyLogs[dateStr] = {
+      meals: [[],[],[],[]],
+      activity: { gym: false, cardio: false, steps: '', weightBefore: '', weightAfter: '' }
+    };
+  }
+  return state.dailyLogs[dateStr];
+}
+
+function changeDate(offset) {
+  const d = new Date(state.currentDate);
+  d.setDate(d.getDate() + offset);
+  state.currentDate = d.toISOString().split('T')[0];
+  renderDaily();
+}
+
+function setDate(val) {
+  state.currentDate = val;
+  renderDaily();
+}
+
+function showToast(msg, type='success') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+function showModule(mod) {
+  activeModule = mod;
+  document.getElementById('module-macro').style.display = mod === 'macro' ? 'block' : 'none';
+  document.getElementById('module-finance').style.display = mod === 'finance' ? 'block' : 'none';
+  document.getElementById('modBtn-macro').classList.toggle('active', mod === 'macro');
+  document.getElementById('modBtn-finance').classList.toggle('active', mod === 'finance');
+  document.getElementById('appTitle').textContent = mod === 'macro' ? 'Macro Tracker' : 'Personal Finances';
+  if (mod === 'macro') renderDaily();
+  if (mod === 'finance') showFinTab(activeFinTab);
+}
+
+function showTab(tab) {
+  const macroTabs = document.querySelectorAll('#module-macro .nav-tabs button');
+  ['daily','weekly','settings'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===tab ? 'block' : 'none';
+  });
+  macroTabs.forEach((btn,i) => {
+    btn.classList.toggle('active', ['daily','weekly','settings'][i] === tab);
+  });
+  if (tab === 'daily') renderDaily();
+  if (tab === 'weekly') renderWeekly();
+  if (tab === 'settings') renderSettings();
+}
+
+function toggleFinSection(id, chevId) {
+  const el = document.getElementById(id);
+  const chev = document.getElementById(chevId);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (chev) chev.style.transform = open ? 'rotate(0deg)' : 'rotate(90deg)';
+}
+
+function showFinTab(tab) {
+  activeFinTab = tab;
+  ['lending','investments'].forEach(t => {
+    document.getElementById('fintab-'+t).style.display = t===tab ? 'block' : 'none';
+  });
+  const finBtns = document.querySelectorAll('#module-finance .nav-tabs button');
+  finBtns.forEach((btn,i) => {
+    btn.classList.toggle('active', ['lending','investments'][i] === tab);
+  });
+  if (tab === 'lending') renderLending();
+  if (tab === 'investments') renderInvestments();
+}
+
+// ========== DAILY TAB ==========
+function renderDaily() {
+  const log = getLog(state.currentDate);
+  const totals = calcDayTotals(log);
+  const t = state.targets;
+  const calPct = t.dailyCal > 0 ? Math.round((totals.cal / t.dailyCal) * 100) : 0;
+  const proPct = t.protein > 0 ? Math.round((totals.protein / t.protein) * 100) : 0;
+
+  let html = `
+    <div class="date-nav">
+      <button onclick="changeDate(-1)">◀</button>
+      <div class="date-display">
+        <div>${formatDate(state.currentDate)}</div>
+        <input type="date" value="${state.currentDate}" onchange="setDate(this.value)">
+      </div>
+      <button onclick="changeDate(1)">▶</button>
+    </div>
+
+    <!-- Activity Tracker -->
+    <div class="card">
+      <h3>🏋️ Activity Tracker</h3>
+      <div class="activity-row">
+        <div class="checkbox-group">
+          <input type="checkbox" id="gymCheck" ${log.activity.gym ? 'checked' : ''} onchange="updateActivity('gym', this.checked)">
+          <label for="gymCheck">💪 Weight Training</label>
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="cardioCheck" ${log.activity.cardio ? 'checked' : ''} onchange="updateActivity('cardio', this.checked)">
+          <label for="cardioCheck">🏃 Cardio</label>
+        </div>
+        <div>
+          <input class="input-sm" type="number" placeholder="Steps" value="${log.activity.steps}" onchange="updateActivity('steps', this.value)">
+        </div>
+        <div>
+          <input class="input-sm" type="number" step="0.1" placeholder="BW Before" value="${log.activity.weightBefore}" onchange="updateActivity('weightBefore', this.value)">
+        </div>
+        <div>
+          <input class="input-sm" type="number" step="0.1" placeholder="BW After" value="${log.activity.weightAfter}" onchange="updateActivity('weightAfter', this.value)">
+        </div>
+      </div>
+      ${log.activity.gym ? `<div style="margin-top:10px;">
+        <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:6px;">Muscle groups trained:</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${['Biceps','Back','Chest','Triceps','Legs','Shoulders','Core & Waist'].map(part => 
+            `<label style="display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:15px;font-size:0.75rem;cursor:pointer;border:1px solid ${(log.activity.bodyParts||[]).includes(part)?'#00d4ff':'rgba(255,255,255,0.15)'};background:${(log.activity.bodyParts||[]).includes(part)?'rgba(0,212,255,0.2)':'rgba(255,255,255,0.05)'};color:${(log.activity.bodyParts||[]).includes(part)?'#00d4ff':'#aaa'}">
+              <input type="checkbox" style="display:none" ${(log.activity.bodyParts||[]).includes(part)?'checked':''} onchange="toggleBodyPart('${part}')">
+              ${part}
+            </label>`
+          ).join('')}
+        </div>
+      </div>` : ''}
+    </div>
+
+    <!-- Macro Summary -->
+    <div class="card">
+      <h3>📊 Daily Summary</h3>
+      <div class="macro-grid">
+        <div class="macro-card calories"><div class="value" style="color:#00d4ff">${totals.cal}</div><div class="label">Calories<br>${t.dailyCal - totals.cal >= 0 ? (t.dailyCal - totals.cal) + ' left' : Math.abs(t.dailyCal - totals.cal) + ' over'}</div></div>
+        <div class="macro-card protein"><div class="value" style="color:#ff6b6b">${totals.protein.toFixed(1)}g</div><div class="label">Protein<br>${t.protein - totals.protein >= 0 ? (t.protein - totals.protein).toFixed(0) + 'g left' : Math.abs(t.protein - totals.protein).toFixed(0) + 'g over'}</div></div>
+        <div class="macro-card carbs"><div class="value" style="color:#ffd700">${totals.carbs.toFixed(1)}g</div><div class="label">Carbs</div></div>
+        <div class="macro-card fat"><div class="value" style="color:#a29bfe">${totals.fat.toFixed(1)}g</div><div class="label">Fat</div></div>
+      </div>
+      <div class="progress-container">
+        <div class="progress-label"><span>Calories (${calPct}%)</span><span>${totals.cal} / ${t.dailyCal} kcal</span></div>
+        <div class="progress-bar"><div class="progress-fill cal-color" style="width:${Math.min(calPct,100)}%;${calPct>100?'background:linear-gradient(90deg,#e74c3c,#c0392b)':''}"></div></div>
+      </div>
+      <div class="progress-container">
+        <div class="progress-label"><span>Protein (${proPct}%)</span><span>${totals.protein.toFixed(1)} / ${t.protein}g</span></div>
+        <div class="progress-bar"><div class="progress-fill protein-color" style="width:${Math.min(proPct,100)}%;${proPct>100?'background:linear-gradient(90deg,#e74c3c,#c0392b)':''}"></div></div>
+      </div>
+    </div>
+  `;
+
+  // Backup Reminder
+  html += renderBackupReminder();
+
+  // Quick Add Section
+  html += renderQuickAdd();
+
+  // Meals
+  html += `<div class="card"><h3>🍽️ Meals</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn-add-food" style="flex:1;min-width:150px;" onclick="openAddFoodModal()">➕ Add Meal</button>
+      <button class="btn-add-food" style="flex:1;min-width:150px;background:linear-gradient(135deg,#ffd700,#f0932b);" onclick="openDirectLogModal()">✏️ Log Directly</button>
+    </div>`;
+  for (let m = 0; m < 4; m++) {
+    const mealTotals = calcMealTotals(log.meals[m]);
+    html += `<div class="meal-section">
+      <div class="meal-header"><span>Meal ${m+1}</span><span style="font-size:0.75rem;color:#aaa">${mealTotals.cal} kcal | P:${mealTotals.protein.toFixed(1)}g | C:${mealTotals.carbs.toFixed(1)}g | F:${mealTotals.fat.toFixed(1)}g</span></div>
+      <div class="meal-items">`;
+    log.meals[m].forEach((item, idx) => {
+      html += `<div class="meal-item">
+        <span>${item.name} (${item.qty} ${item.unit})</span>
+        <span style="color:#aaa">${item.cal} kcal | P:${item.protein.toFixed(1)}g</span>
+        <button class="remove-btn" onclick="removeFood(${m},${idx})">✕</button>
+      </div>`;
+    });
+    if (log.meals[m].length === 0) html += `<div class="meal-item" style="color:#555">No items logged</div>`;
+    html += `</div></div>`;
+  }
+  html += `</div>`;
+
+  document.getElementById('tab-daily').innerHTML = html;
+}
+
+function updateActivity(field, value) {
+  const log = getLog(state.currentDate);
+  log.activity[field] = value;
+  if (field === 'gym' && !value) {
+    log.activity.bodyParts = [];
+  }
+  saveState();
+  if (field === 'gym') renderDaily();
+}
+
+function toggleBodyPart(part) {
+  const log = getLog(state.currentDate);
+  if (!log.activity.bodyParts) log.activity.bodyParts = [];
+  const idx = log.activity.bodyParts.indexOf(part);
+  if (idx >= 0) {
+    log.activity.bodyParts.splice(idx, 1);
+  } else {
+    log.activity.bodyParts.push(part);
+  }
+  saveState();
+  renderDaily();
+}
+
+function calcMealTotals(meal) {
+  return meal.reduce((acc, item) => ({
+    protein: acc.protein + item.protein,
+    carbs: acc.carbs + item.carbs,
+    fat: acc.fat + item.fat,
+    cal: acc.cal + item.cal,
+    fibre: acc.fibre + (item.fibre||0)
+  }), {protein:0, carbs:0, fat:0, cal:0, fibre:0});
+}
+
+function calcDayTotals(log) {
+  let totals = {protein:0, carbs:0, fat:0, cal:0, fibre:0};
+  log.meals.forEach(meal => {
+    const mt = calcMealTotals(meal);
+    totals.protein += mt.protein;
+    totals.carbs += mt.carbs;
+    totals.fat += mt.fat;
+    totals.cal += mt.cal;
+    totals.fibre += mt.fibre;
+  });
+  return totals;
+}
+
+// ========== ADD FOOD TO MEAL ==========
+function openAddFoodModal() {
+  document.getElementById('addFoodModal').classList.add('active');
+  document.getElementById('modalFoodSearch').value = '';
+  document.getElementById('modalQty').value = '1';
+  document.getElementById('modalFoodPreview').textContent = '';
+  document.getElementById('modalSearchResults').style.display = 'none';
+  selectedFood = null;
+}
+
+function closeModal() {
+  document.getElementById('addFoodModal').classList.remove('active');
+  selectedFood = null;
+}
+
+function searchFoodModal(query) {
+  const results = document.getElementById('modalSearchResults');
+  if (!query) { results.style.display = 'none'; return; }
+  const matches = state.foodDB.filter(f => f.name.toLowerCase().includes(query.toLowerCase())).slice(0, 20);
+  if (matches.length === 0) {
+    results.innerHTML = '<div class="search-result-item">No foods found</div>';
+  } else {
+    results.innerHTML = matches.map(f =>
+      `<div class="search-result-item" onclick="selectFood('${f.name.replace(/'/g,"\\'")}')">
+        <div>${f.name}</div>
+        <div class="food-macros">${f.cal} kcal | P:${f.protein}g | C:${f.carbs}g | F:${f.fat}g (per ${f.qty} ${f.unit})</div>
+      </div>`
+    ).join('');
+  }
+  results.style.display = 'block';
+}
+
+function selectFood(name) {
+  selectedFood = state.foodDB.find(f => f.name === name);
+  document.getElementById('modalFoodSearch').value = name;
+  document.getElementById('modalSearchResults').style.display = 'none';
+  if (selectedFood) {
+    document.getElementById('modalFoodPreview').textContent =
+      `Per ${selectedFood.qty} ${selectedFood.unit}: ${selectedFood.cal} kcal | P:${selectedFood.protein}g | C:${selectedFood.carbs}g | F:${selectedFood.fat}g`;
+  }
+}
+
+function addFoodToMeal() {
+  if (!selectedFood) { showToast('Please select a food first', 'error'); return; }
+  const mealIdx = parseInt(document.getElementById('modalMealSelect').value);
+  const qty = parseFloat(document.getElementById('modalQty').value);
+  if (!qty || qty <= 0) { showToast('Enter a valid quantity', 'error'); return; }
+
+  const multiplier = qty / selectedFood.qty;
+  const entry = {
+    name: selectedFood.name,
+    qty: qty,
+    unit: selectedFood.unit,
+    protein: Math.round(selectedFood.protein * multiplier * 10) / 10,
+    carbs: Math.round(selectedFood.carbs * multiplier * 10) / 10,
+    fat: Math.round(selectedFood.fat * multiplier * 10) / 10,
+    cal: Math.round(selectedFood.cal * multiplier),
+    fibre: Math.round((selectedFood.fibre||0) * multiplier * 10) / 10
+  };
+
+  const log = getLog(state.currentDate);
+  log.meals[mealIdx].push(entry);
+  unhideQuickAdd(entry.name);
+  saveState();
+  closeModal();
+  renderDaily();
+  showToast(`Added ${entry.name} to Meal ${mealIdx + 1}`);
+}
+
+function removeFood(mealIdx, itemIdx) {
+  const log = getLog(state.currentDate);
+  log.meals[mealIdx].splice(itemIdx, 1);
+  saveState();
+  renderDaily();
+}
+
+// ========== WEEKLY TAB ==========
+function renderWeekly() {
+  const d = new Date(state.currentDate);
+  const dayOfWeek = d.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + mondayOffset);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  let weekDays = [];
+  let totalCal = 0, loggedDays = 0, totalWeight = 0, weightDays = 0, gymDays = 0, cardioDays = 0, totalSteps = 0;
+
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
+    const dateStr = date.toISOString().split('T')[0];
+    const log = state.dailyLogs[dateStr];
+    let dayCal = 0, gym = false, cardio = false, weight = '', bodyParts = [], steps = '';
+    if (log) {
+      const totals = calcDayTotals(log);
+      dayCal = totals.cal;
+      if (dayCal > 0) { totalCal += dayCal; loggedDays++; }
+      if (log.activity) {
+        gym = log.activity.gym || false;
+        cardio = log.activity.cardio || false;
+        weight = log.activity.weightBefore || '';
+        bodyParts = log.activity.bodyParts || [];
+        steps = log.activity.steps || '';
+        if (gym) gymDays++;
+        if (cardio) cardioDays++;
+        if (steps) totalSteps += parseInt(steps) || 0;
+        if (weight) { totalWeight += parseFloat(weight); weightDays++; }
+      }
+    }
+    weekDays.push({ dateStr, dayCal, gym, cardio, weight, bodyParts, steps, isToday: dateStr === new Date().toISOString().split('T')[0], dayName: getDayName(dateStr).substring(0,3), date: date.getDate() });
+  }
+
+  const avgCal = loggedDays > 0 ? Math.round(totalCal / loggedDays) : 0;
+  const avgWeight = weightDays > 0 ? (totalWeight / weightDays).toFixed(1) : 'N/A';
+  const remaining = state.targets.weeklyCal - totalCal;
+
+  // Week navigation
+  const weekStart = `${monday.getDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][monday.getMonth()]}`;
+  const weekEnd = `${sunday.getDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][sunday.getMonth()]} ${sunday.getFullYear()}`;
+
+  let html = `
+    <div class="date-nav">
+      <button onclick="changeWeek(-1)">◀</button>
+      <div class="date-display">
+        <div>${weekStart} — ${weekEnd}</div>
+      </div>
+      <button onclick="changeWeek(1)">▶</button>
+    </div>`;
+
+  html += `<div class="card">
+    <h2>📊 Weekly Summary</h2>
+    <div class="macro-grid">
+      <div class="macro-card calories"><div class="value" style="color:#00d4ff">${totalCal}</div><div class="label">Total kcal</div></div>
+      <div class="macro-card"><div class="value" style="color:${remaining >= 0 ? '#27ae60' : '#e74c3c'}">${remaining >= 0 ? remaining : '+' + Math.abs(remaining)}</div><div class="label">${remaining >= 0 ? 'Remaining' : 'Over target'}</div></div>
+      <div class="macro-card"><div class="value" style="color:#ffd700">${avgCal}</div><div class="label">Daily Avg kcal</div></div>
+      <div class="macro-card"><div class="value" style="color:#a29bfe">${avgWeight}</div><div class="label">Avg Weight (kg)</div></div>
+      <div class="macro-card"><div class="value" style="color:#ff6b6b">${gymDays}</div><div class="label">💪 Gym Days</div></div>
+      <div class="macro-card"><div class="value" style="color:#27ae60">${cardioDays}</div><div class="label">🏃 Cardio Days</div></div>
+      <div class="macro-card"><div class="value" style="color:#ffd700">${totalSteps.toLocaleString()}</div><div class="label">👟 Total Steps</div></div>
+    </div>
+    <div class="progress-container">
+      <div class="progress-label"><span>Weekly Progress</span><span>${totalCal} / ${state.targets.weeklyCal} kcal</span></div>
+      <div class="progress-bar"><div class="progress-fill cal-color" style="width:${Math.min(Math.round(totalCal/state.targets.weeklyCal*100),100)}%"></div></div>
+    </div>
+  </div>`;
+
+  // Daily breakdown table
+  html += `<div class="card"><h3>📅 Daily Breakdown</h3>
+    <div style="overflow-x:auto;">
+    <table style="width:100%;font-size:0.8rem;border-collapse:collapse;">
+      <tr style="color:#00d4ff;border-bottom:1px solid rgba(255,255,255,0.1);">
+        <th style="padding:8px 4px;text-align:left;">Day</th>
+        <th style="padding:8px 4px;text-align:center;">Calories</th>
+        <th style="padding:8px 4px;text-align:center;">Steps</th>
+        <th style="padding:8px 4px;text-align:center;">💪</th>
+        <th style="padding:8px 4px;text-align:center;">🏃</th>
+        <th style="padding:8px 4px;text-align:center;">Weight</th>
+        <th style="padding:8px 4px;text-align:left;">Trained</th>
+      </tr>`;
+  weekDays.forEach(day => {
+    const calColor = day.dayCal > state.targets.dailyCal ? '#e74c3c' : day.dayCal > 0 ? '#27ae60' : '#555';
+    const partsStr = day.bodyParts.length > 0 ? day.bodyParts.join(', ') : '—';
+    html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);${day.isToday ? 'background:rgba(0,212,255,0.08);' : ''}">
+      <td style="padding:8px 4px;font-weight:${day.isToday ? 'bold' : 'normal'};color:${day.isToday ? '#ffd700' : '#e0e0e0'}">${day.dayName} ${day.date}</td>
+      <td style="padding:8px 4px;text-align:center;color:${calColor};font-weight:bold;">${day.dayCal || '-'}</td>
+      <td style="padding:8px 4px;text-align:center;color:#ffd700;">${day.steps || '—'}</td>
+      <td style="padding:8px 4px;text-align:center;">${day.gym ? '✅' : '—'}</td>
+      <td style="padding:8px 4px;text-align:center;">${day.cardio ? '✅' : '—'}</td>
+      <td style="padding:8px 4px;text-align:center;color:#a29bfe;">${day.weight || '—'}</td>
+      <td style="padding:8px 4px;font-size:0.7rem;color:#94a3b8;">${partsStr}</td>
+    </tr>`;
+  });
+  html += `</table></div></div>`;
+
+  document.getElementById('tab-weekly').innerHTML = html;
+}
+
+function changeWeek(offset) {
+  const d = new Date(state.currentDate);
+  d.setDate(d.getDate() + (offset * 7));
+  state.currentDate = d.toISOString().split('T')[0];
+  renderWeekly();
+}
+
+// ========== FOOD DB (in Settings) ==========
+
+function filterFoodList(query) {
+  const list = document.getElementById('foodList');
+  if (!list) return;
+  const sortEl = document.getElementById('catalogSort');
+  const sortMode = sortEl ? sortEl.value : 'alpha';
+  let filtered = query ? state.foodDB.filter(f => f.name.toLowerCase().includes(query.toLowerCase())) : state.foodDB.slice();
+  if (sortMode === 'alpha') {
+    filtered.sort((a, b) => a.name.localeCompare(b.name));
+  } else {
+    // Last added = reverse of array order (newest at top)
+    filtered.reverse();
+  }
+  let html = `<div class="food-row food-row-header"><span>Name</span><span>Qty</span><span>P(g)</span><span>C(g)</span><span>F(g)</span><span>Cal</span><span></span></div>`;
+  filtered.forEach((f, idx) => {
+    const realIdx = state.foodDB.indexOf(f);
+    html += `<div class="food-row">
+      <span>${f.name}</span><span>${f.qty} ${f.unit}</span>
+      <span style="color:#ff6b6b">${f.protein}</span>
+      <span style="color:#ffd700">${f.carbs}</span>
+      <span style="color:#a29bfe">${f.fat}</span>
+      <span style="color:#00d4ff">${f.cal}</span>
+      <span><button class="btn btn-danger btn-sm" onclick="deleteFood(${realIdx})">✕</button></span>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+function openNewFoodModal() {
+  document.getElementById('newFoodModal').classList.add('active');
+  ['nfName','nfQty','nfUnit','nfProtein','nfCarbs','nfFat','nfCal','nfFibre'].forEach(id => document.getElementById(id).value = '');
+}
+
+function closeNewFoodModal() {
+  document.getElementById('newFoodModal').classList.remove('active');
+}
+
+function saveNewFood() {
+  const name = document.getElementById('nfName').value.trim();
+  const qty = parseFloat(document.getElementById('nfQty').value);
+  const unit = document.getElementById('nfUnit').value.trim();
+  const protein = parseFloat(document.getElementById('nfProtein').value) || 0;
+  const carbs = parseFloat(document.getElementById('nfCarbs').value) || 0;
+  const fat = parseFloat(document.getElementById('nfFat').value) || 0;
+  const cal = parseFloat(document.getElementById('nfCal').value) || 0;
+  const fibre = parseFloat(document.getElementById('nfFibre').value) || 0;
+
+  if (!name) { showToast('Name is required', 'error'); return; }
+  if (!qty || qty <= 0) { showToast('Valid quantity is required', 'error'); return; }
+  if (!unit) { showToast('Unit is required', 'error'); return; }
+  if (state.foodDB.some(f => f.name.toLowerCase() === name.toLowerCase())) { showToast('Food already exists!', 'error'); return; }
+
+  state.foodDB.push({ name, qty, unit, cp: false, protein, carbs, fat, cal, fibre });
+  saveState();
+  closeNewFoodModal();
+  renderFoods();
+  showToast(`Added ${name} to database`);
+}
+
+function deleteFood(idx) {
+  if (confirm(`Delete "${state.foodDB[idx].name}"?`)) {
+    state.foodDB.splice(idx, 1);
+    saveState();
+    renderFoods();
+  }
+}
+
+function showImport() {
+  const section = document.getElementById('importSection');
+  section.style.display = section.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleCatalog() {
+  const content = document.getElementById('catalogContent');
+  const icon = document.getElementById('catalogToggleIcon');
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    icon.textContent = '▼';
+    filterFoodList('');
+  } else {
+    content.style.display = 'none';
+    icon.textContent = '▶';
+  }
+}
+
+function importCSV() {
+  const csv = document.getElementById('csvInput').value.trim();
+  if (!csv) { showToast('Paste CSV data first', 'error'); return; }
+  const lines = csv.split('\n');
+  if (lines.length > 500) { showToast('Maximum 500 rows allowed', 'error'); return; }
+
+  let imported = 0, skipped = 0;
+  lines.forEach(line => {
+    const parts = line.split(',').map(s => s.trim());
+    if (parts.length < 9) { skipped++; return; }
+    const [name, qty, unit, cp, protein, carbs, fat, cal, fibre] = parts;
+    if (!name || isNaN(qty) || !unit || isNaN(protein) || isNaN(carbs) || isNaN(fat) || isNaN(cal) || isNaN(fibre)) { skipped++; return; }
+    const existing = state.foodDB.findIndex(f => f.name.toLowerCase() === name.toLowerCase().trim());
+    const food = { name: name.trim(), qty: parseFloat(qty), unit, cp: cp==='1'||cp==='true', protein: parseFloat(protein), carbs: parseFloat(carbs), fat: parseFloat(fat), cal: parseFloat(cal), fibre: parseFloat(fibre) };
+    if (existing >= 0) { state.foodDB[existing] = food; } else { state.foodDB.push(food); }
+    imported++;
+  });
+  saveState();
+  renderFoods();
+  showToast(`Imported: ${imported}, Skipped: ${skipped}`);
+}
+
+function exportData() {
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'calorie_tracker_backup.json';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Data exported!');
+}
+
+// ========== SETTINGS TAB ==========
+function renderSettings() {
+  const t = state.targets;
+  let html = `<div class="card">
+    <h2>⚙️ Settings & Targets</h2>
+    <div class="settings-grid">
+      <div class="setting-item"><label>Body Weight (kg)</label><input type="number" value="${t.weight}" onchange="updateTarget('weight', this.value)"></div>
+      <div class="setting-item"><label>Activity Level</label>
+        <select onchange="updateTarget('activity', this.value)">
+          <option ${t.activity==='Sedentary'?'selected':''}>Sedentary</option>
+          <option ${t.activity==='Lightly Active'?'selected':''}>Lightly Active</option>
+          <option ${t.activity==='Moderately Active'?'selected':''}>Moderately Active</option>
+          <option ${t.activity==='Very Active'?'selected':''}>Very Active</option>
+          <option ${t.activity==='Extra Active'?'selected':''}>Extra Active</option>
+        </select>
+      </div>
+      <div class="setting-item"><label>Maintenance Calories (kcal)</label><input type="number" value="${t.maintenance}" onchange="updateTarget('maintenance', this.value)"></div>
+      <div class="setting-item"><label>Daily Calorie Target (kcal)</label><input type="number" value="${t.dailyCal}" onchange="updateTarget('dailyCal', this.value)"></div>
+      <div class="setting-item"><label>Protein Target (g)</label><input type="number" value="${t.protein}" onchange="updateTarget('protein', this.value)"></div>
+      <div class="setting-item"><label>Weekly Calorie Target (kcal)</label><input type="number" value="${t.weeklyCal}" onchange="updateTarget('weeklyCal', this.value)"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>📦 Data Management</h2>
+    <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:10px;">Use Sync to transfer data between devices. Export on one → share the file → Import on the other.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-primary" style="flex:1;min-width:120px;padding:12px;" onclick="exportData()">📤 Export / Backup</button>
+      <label class="btn btn-success" style="flex:1;min-width:120px;padding:12px;text-align:center;cursor:pointer;">📥 Import / Restore <input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
+    </div>
+    <div style="margin-top:10px;">
+      <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+    </div>
+  </div>`;
+
+  // Food Catalog Section (collapsed by default)
+  html += `<div class="card">
+    <h2 style="cursor:pointer;" onclick="toggleCatalog()">🍎 Catalog (${state.foodDB.length} items) <span id="catalogToggleIcon">▶</span></h2>
+    <div id="catalogContent" style="display:none;">
+    <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;">
+      <input type="text" id="foodDBSearch" placeholder="Search foods..." style="flex:1;min-width:200px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#e0e0e0;" oninput="filterFoodList(this.value)">
+      <select id="catalogSort" onchange="filterFoodList(document.getElementById('foodDBSearch').value)" style="padding:8px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:rgba(15,23,42,0.8);color:#f1f5f9;font-size:0.8rem;">
+        <option value="alpha">A → Z</option>
+        <option value="recent">Last Added</option>
+      </select>
+      <button class="btn btn-primary" onclick="openNewFoodModal()">+ Add Food</button>
+      <button class="btn btn-success" onclick="showImport()">📥 Import CSV</button>
+    </div>
+    <div id="importSection" style="display:none;margin:10px 0;">
+      <textarea id="csvInput" class="import-area" placeholder="Paste CSV here: name,qty,unit,cp(0/1),protein,carbs,fat,calories,fibre"></textarea>
+      <button class="btn btn-success btn-sm" onclick="importCSV()" style="margin-top:5px;">Import</button>
+    </div>
+    <div class="food-list" id="foodList"></div>
+    </div>
+  </div>`;
+
+  document.getElementById('tab-settings').innerHTML = html;
+  filterFoodList('');
+}
+
+function updateTarget(key, value) {
+  if (key === 'activity') {
+    state.targets[key] = value;
+  } else {
+    state.targets[key] = parseFloat(value) || 0;
+  }
+  saveState();
+  showToast('Target updated!');
+}
+
+function importJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.foodDB && data.dailyLogs && data.targets) {
+        state.foodDB = data.foodDB;
+        state.dailyLogs = data.dailyLogs;
+        state.targets = data.targets;
+        if (data.finance) {
+          state.finance = data.finance;
+          if (!state.finance.loans) state.finance.loans = [];
+          if (!state.finance.investments) state.finance.investments = [];
+        }
+        saveState();
+        renderAll();
+        showToast('Data imported successfully!');
+      } else {
+        showToast('Invalid file format', 'error');
+      }
+    } catch(err) {
+      showToast('Failed to parse file', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  if (confirm('Are you sure? This will delete ALL your data!')) {
+    localStorage.removeItem('calorieTrackerState');
+    state.foodDB = DEFAULT_FOODS.slice();
+    state.dailyLogs = {};
+    state.targets = { weight: 85, activity: 'Sedentary', maintenance: 2442, dailyCal: 1600, protein: 153, weeklyCal: 11550 };
+    state.finance = { loans: [], investments: [] };
+    saveState();
+    renderAll();
+    showToast('All data cleared');
+  }
+}
+
+function renderAll() {
+  renderDaily();
+}
+
+// ========================================================================
+// ========================= PERSONAL FINANCES ============================
+// ========================================================================
+
+function fmtMoney(n) {
+  const num = Number(n) || 0;
+  return '₹' + num.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+
+// Compact Indian-format money for summary tiles (₹5.5L, ₹1.2Cr). Full value goes in the tooltip.
+function fmtMoneyShort(n) {
+  const num = Number(n) || 0;
+  const abs = Math.abs(num);
+  const trim = v => v.toFixed(2).replace(/\.?0+$/, '');
+  if (abs >= 1e7) return '₹' + trim(num / 1e7) + 'Cr';
+  if (abs >= 1e5) return '₹' + trim(num / 1e5) + 'L';
+  if (abs >= 1e3) return '₹' + trim(num / 1e3) + 'K';
+  return fmtMoney(num);
+}
+
+// Initials used for the loan card avatar.
+function initialsOf(name) {
+  const parts = String(name || '?').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// Which loan group is shown: all | due | advance | cleared
+let loanFilter = 'all';
+function setLoanFilter(f) {
+  loanFilter = f;
+  renderLending();
+}
+
+// Collapsed-by-default "add" panels so the data stays at the top of the screen.
+let showAddLoan = false, showAddInvestment = false;
+function toggleAddLoan() {
+  showAddLoan = !showAddLoan;
+  renderLending();
+}
+function toggleAddInvestment() {
+  showAddInvestment = !showAddInvestment;
+  renderInvestments();
+}
+
+function finId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function fmtDay(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// ---- Loan calculations ----
+// Reducing-balance model:
+//   - rate is MONTHLY interest %.
+//   - principalPayments reduce the outstanding principal.
+//   - interestPayments track the monthly interest the borrower pays.
+//   - Monthly interest due is calculated on the CURRENT outstanding principal.
+const MS_DAY = 1000 * 60 * 60 * 24;
+
+// A principal repayment made within this many days of a cycle's start counts toward THAT
+// cycle's interest. If it lands later in the cycle, that cycle still charges interest on the
+// old balance and the reduction applies from the next cycle onwards.
+const PRINCIPAL_GRACE_DAYS = 10;
+
+function addDays(dateStr, days) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+// Add whole calendar months to a date, keeping the same day-of-month.
+// If the target month is shorter (e.g. Jan 31 + 1mo), it clamps to the last day of that month.
+function addMonths(dateStr, months) {
+  const d = new Date(dateStr);
+  const targetDay = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + months);
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(targetDay, lastDay));
+  return d;
+}
+
+// Build a month-by-month (calendar-month cycle) interest ledger for a loan.
+// A cycle runs from the same day-of-month to the next month's same day, regardless of
+// whether the month has 28/30/31 days. Interest accrues on the outstanding principal
+// during that cycle, and interest payments waterfall across cycles in date order.
+function buildInterestSchedule(loan) {
+  const principal = Number(loan.principal) || 0;
+  const rate = Number(loan.rate) || 0; // monthly %
+  if (!loan.startDate) return { cycles: [], totalDue: 0, totalPaid: 0, advance: 0 };
+
+  const now = new Date();
+
+  // Count completed calendar-month cycles: increment months until the next boundary passes today.
+  let cyclesElapsed = 0;
+  while (addMonths(loan.startDate, cyclesElapsed + 1) <= now) {
+    cyclesElapsed++;
+  }
+
+  // Principal repayments sorted by date, used to compute outstanding principal per cycle.
+  const pPays = (loan.principalPayments || []).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // Outstanding principal on/before a given date = original minus principal repaid up to that date (inclusive).
+  // Compares by YYYY-MM-DD strings to avoid time-of-day/timezone edge cases.
+  function outstandingAt(dateObj) {
+    const cutoff = dateObj.toISOString().split('T')[0];
+    let repaid = 0;
+    pPays.forEach(p => { if (p.date <= cutoff) repaid += Number(p.amount) || 0; });
+    return Math.max(principal - repaid, 0);
+  }
+
+  // Build cycles (each = one calendar month from start).
+  // A cycle's interest uses the principal outstanding as of PRINCIPAL_GRACE_DAYS after the cycle
+  // started. So a repayment made early in the month (within the grace window) reduces that same
+  // month's interest, while one made later only takes effect from the next month.
+  // (e.g. cycle 12 Apr -> 12 May, grace to 22 Apr: a 9 May repayment is too late, so that month
+  //  charges 3% of 500000 and the 12 May -> 12 Jun month charges 3% of 300000. Had the repayment
+  //  landed on 18 Apr, the 12 Apr -> 12 May month itself would charge 3% of 300000.)
+  const cycles = [];
+  for (let i = 0; i < cyclesElapsed; i++) {
+    const cycleStart = addMonths(loan.startDate, i);
+    const cycleEnd = addMonths(loan.startDate, i + 1);
+    const graceCutoff = addDays(cycleStart.toISOString().split('T')[0], PRINCIPAL_GRACE_DAYS);
+    const outstanding = outstandingAt(graceCutoff);
+    const due = outstanding * (rate / 100);
+    cycles.push({
+      index: i + 1,
+      start: cycleStart.toISOString().split('T')[0],
+      end: cycleEnd.toISOString().split('T')[0],
+      outstanding, due, paid: 0, payments: []
+    });
+  }
+
+  // Pure date-ordered waterfall: process each interest payment in date order and use it to
+  // fill the OLDEST unpaid month's due first, cascading to later months. Each chunk is listed
+  // under the month it actually settled, so a payment can be split across months.
+  const iPays = (loan.interestPayments || []).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+  cycles.forEach(cy => { cy.paid = 0; cy.payments = []; });
+  let advance = 0;              // net advance remaining (after covering all elapsed dues)
+  const paymentAdvance = {};    // per-payment: amount of THIS installment that was paid ahead of what was due
+
+  iPays.forEach(p => {
+    let remaining = Number(p.amount) || 0;
+    // 1) Cover older pending months AND the CURRENT month (the cycle the payment date falls in).
+    //    A cycle is a current/past obligation if the payment was made after that cycle STARTED.
+    //    Only cycles that start on/after the payment date are "future" -> that portion is advance.
+    //    So a payment is advance only once the current month's own interest is fully covered.
+    for (let c = 0; c < cycles.length && remaining > 0.0001; c++) {
+      const isFuture = cycles[c].start > p.date;  // cycle starts strictly after the payment date
+      if (isFuture) break;
+      const gap = cycles[c].due - cycles[c].paid;
+      if (gap <= 0.0001) continue;
+      const applied = Math.min(gap, remaining);
+      cycles[c].paid += applied;
+      cycles[c].payments.push({ date: p.date, amount: applied, note: p.note, id: p.id });
+      remaining -= applied;
+    }
+    // 2) Whatever is left is paid ahead — this installment's advance portion.
+    if (remaining > 0.0001) paymentAdvance[p.id] = remaining;
+
+    // 3) Apply that advance forward to future (not-yet-due) elapsed cycles for the ledger display.
+    for (let c = 0; c < cycles.length && remaining > 0.0001; c++) {
+      const gap = cycles[c].due - cycles[c].paid;
+      if (gap <= 0.0001) continue;
+      const applied = Math.min(gap, remaining);
+      cycles[c].paid += applied;
+      cycles[c].payments.push({ date: p.date, amount: applied, note: p.note, id: p.id, ahead: true });
+      remaining -= applied;
+    }
+    if (remaining > 0.0001) advance += remaining; // beyond all elapsed months -> net advance credit
+  });
+
+  // Per-month "received" = sum of chunks that settled that month (for display).
+  cycles.forEach(cy => { cy.received = cy.payments.reduce((s, x) => s + x.amount, 0); });
+
+  // Per-payment PENDING: for each fully-elapsed month that ended short, attribute the shortfall
+  // to the latest payment that was made for that month (so that installment's row shows what
+  // was still pending for its month). Months whose due date hasn't passed yet aren't "pending".
+  const todayStr = new Date().toISOString().split('T')[0];
+  const paymentPending = {};
+  cycles.forEach(cy => {
+    const shortfall = cy.due - cy.paid;
+    if (shortfall <= 0.01) return;             // fully paid (or overpaid via cascade)
+    if (cy.end > todayStr) return;             // month not over yet -> not pending, just current
+    // Find the latest payment (by date) that contributed to this month.
+    if (cy.payments.length > 0) {
+      const last = cy.payments.reduce((a, b) => (a.date >= b.date ? a : b));
+      paymentPending[last.id] = (paymentPending[last.id] || 0) + shortfall;
+    }
+  });
+
+  const totalDue = cycles.reduce((s, c) => s + c.due, 0);
+  const totalPaid = (loan.interestPayments || []).reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  return { cycles, totalDue, totalPaid, advance, paymentAdvance, paymentPending };
+}
+
+function calcLoan(loan) {
+  const principal = Number(loan.principal) || 0;
+  const rate = Number(loan.rate) || 0; // monthly %
+  const principalPaid = (loan.principalPayments || []).reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const interestPaid = (loan.interestPayments || []).reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const outstandingPrincipal = Math.max(principal - principalPaid, 0);
+  const monthlyInterest = outstandingPrincipal * (rate / 100);
+
+  const sched = buildInterestSchedule(loan);
+  const monthsElapsed = sched.cycles.length;
+  const expectedInterest = sched.totalDue;
+  const interestBalance = expectedInterest - interestPaid; // >0 pending, <0 advance
+  const interestPending = Math.max(interestBalance, 0);
+  const interestAdvance = Math.max(-interestBalance, 0);
+  const overdue = interestPending > 0.01;
+  const interestFullyPaid = expectedInterest > 0.01 && Math.abs(interestBalance) <= 0.01;
+
+  return {
+    principal, rate, principalPaid, interestPaid, outstandingPrincipal, monthlyInterest,
+    monthsElapsed, expectedInterest, schedule: sched,
+    interestBalance, interestPending, interestAdvance, interestFullyPaid, overdue,
+    interestOutstanding: interestPending
+  };
+}
+
+// ========================= LENDING TAB =========================
+function renderLending() {
+  const loans = state.finance.loans;
+  const calcs = {};
+  let totalPrincipal = 0, totalOutstanding = 0, totalInterestReceived = 0,
+      totalMonthlyInterest = 0, totalInterestOverdue = 0;
+  loans.forEach(l => {
+    const c = calcLoan(l);
+    calcs[l.id] = c;
+    totalPrincipal += c.principal;
+    totalOutstanding += c.outstandingPrincipal;
+    totalInterestReceived += c.interestPaid;
+    totalMonthlyInterest += c.monthlyInterest;
+    totalInterestOverdue += c.interestOutstanding;
+  });
+
+  // What the borrowers still owe you in total: unpaid principal plus unpaid interest.
+  const receivable = totalOutstanding + totalInterestOverdue;
+  const clearedCount = loans.filter(l => calcs[l.id].outstandingPrincipal <= 0.01).length;
+  const dueCount = loans.filter(l => calcs[l.id].overdue).length;
+  const advCount = loans.filter(l => calcs[l.id].interestAdvance > 0.01).length;
+  const today = new Date().toISOString().split('T')[0];
+
+  // ===== Hero summary: one headline number, supporting figures below =====
+  let html = `
+    <div class="fin-hero">
+      <div class="h-lbl">Total receivable</div>
+      <div class="h-val" title="${fmtMoney(receivable)}">${fmtMoneyShort(receivable)}</div>
+      <div class="h-sub">${loans.length - clearedCount} active · ${clearedCount} cleared${dueCount > 0 ? ' · <span style="color:var(--danger);font-weight:700;">' + dueCount + ' with dues</span>' : ''}</div>
+      <div class="fin-tiles">
+        <div class="fin-tile"><div class="t-val" style="color:var(--danger)" title="${fmtMoney(totalOutstanding)}">${fmtMoneyShort(totalOutstanding)}</div><div class="t-lbl">Principal out</div></div>
+        <div class="fin-tile"><div class="t-val" style="color:${totalInterestOverdue > 0.01 ? 'var(--warning)' : 'var(--success)'}" title="${fmtMoney(totalInterestOverdue)}">${fmtMoneyShort(totalInterestOverdue)}</div><div class="t-lbl">Interest due</div></div>
+        <div class="fin-tile"><div class="t-val" style="color:var(--carbs-c)" title="${fmtMoney(totalMonthlyInterest)}">${fmtMoneyShort(totalMonthlyInterest)}</div><div class="t-lbl">Per month</div></div>
+        <div class="fin-tile"><div class="t-val" style="color:var(--success)" title="${fmtMoney(totalInterestReceived)}">${fmtMoneyShort(totalInterestReceived)}</div><div class="t-lbl">Interest earned</div></div>
+        <div class="fin-tile"><div class="t-val" style="color:var(--fat-c)" title="${fmtMoney(totalPrincipal)}">${fmtMoneyShort(totalPrincipal)}</div><div class="t-lbl">Total lent</div></div>
+      </div>
+    </div>
+
+    <div class="fin-sec-head">
+      <h3>🤝 Loans</h3>
+      <button class="fin-ghost-btn" onclick="toggleAddLoan()">${showAddLoan ? '✕ Cancel' : '＋ New loan'}</button>
+    </div>`;
+
+  // Add-loan form stays collapsed so the loan list is what you see first.
+  if (showAddLoan) {
+    html += `<div class="fin-panel">
+      <div class="fin-form">
+        <input type="text" id="loanBorrower" placeholder="Borrower name *">
+        <input type="number" id="loanPrincipal" placeholder="Amount lent (₹) *" step="0.01" min="0">
+        <input type="number" id="loanRate" placeholder="Monthly interest rate (%)" step="0.01" min="0">
+        <input type="date" id="loanStart" value="${today}">
+        <input type="text" id="loanNote" placeholder="Note (optional)">
+      </div>
+      <button class="btn btn-primary" onclick="addLoan()">💾 Save loan</button>
+    </div>`;
+  }
+
+  if (loans.length === 0) {
+    html += `<div class="fin-empty">
+      <div class="e-icon">🤝</div>
+      <div class="e-title">No loans yet</div>
+      <div class="e-sub">Use “＋ New loan” above to start tracking money you have lent.</div>
+    </div>`;
+  } else {
+    const filters = [
+      ['all', 'All ' + loans.length],
+      ['due', 'Dues ' + dueCount],
+      ['advance', 'Advance ' + advCount],
+      ['cleared', 'Cleared ' + clearedCount]
+    ];
+    html += `<div class="fin-filters">` + filters.map(([key, label]) =>
+      `<button class="fin-filter ${loanFilter === key ? 'active' : ''}" onclick="setLoanFilter('${key}')">${label}</button>`
+    ).join('') + `</div>`;
+
+    const visible = loans.filter(l => {
+      const c = calcs[l.id];
+      if (loanFilter === 'due') return c.overdue;
+      if (loanFilter === 'advance') return c.interestAdvance > 0.01;
+      if (loanFilter === 'cleared') return c.outstandingPrincipal <= 0.01;
+      return true;
+    });
+
+    if (visible.length === 0) {
+      html += `<div class="fin-empty">
+        <div class="e-icon">🔍</div>
+        <div class="e-title">Nothing in this group</div>
+        <div class="e-sub">Pick a different filter above.</div>
+      </div>`;
+    }
+
+    visible.forEach(loan => {
+      const c = calcs[loan.id];
+      const settled = c.outstandingPrincipal <= 0.01;
+
+      // Status drives both the badge and the card's left edge colour.
+      let stateClass, badge;
+      if (settled) {
+        stateClass = 'is-cleared';
+        badge = `<span class="status-badge status-ok">✔ Cleared</span>`;
+      } else if (c.overdue) {
+        stateClass = 'is-due';
+        badge = `<span class="status-badge status-due">⚠ ${fmtMoney(c.interestPending)} interest due</span>`;
+      } else if (c.interestAdvance > 0.01) {
+        stateClass = 'is-adv';
+        badge = `<span class="status-badge status-adv">＋ ${fmtMoney(c.interestAdvance)} advance</span>`;
+      } else {
+        stateClass = 'is-ok';
+        badge = `<span class="status-badge status-ok">✔ Interest up to date</span>`;
+      }
+
+      const repaidPct = c.principal > 0 ? Math.min(c.principalPaid / c.principal * 100, 100) : 0;
+
+      html += `<div class="loan-card ${stateClass}">
+        <div class="loan-top">
+          <div class="loan-avatar">${escapeHtml(initialsOf(loan.borrower))}</div>
+          <div class="loan-id">
+            <div class="loan-name">${escapeHtml(loan.borrower)} <span class="fin-chip">${c.rate}% / mo</span></div>
+            <div class="loan-meta">Lent ${fmtMoney(c.principal)} on ${fmtDay(loan.startDate)}${loan.note ? ' · ' + escapeHtml(loan.note) : ''}</div>
+          </div>
+          <button class="icon-btn" title="Delete loan" aria-label="Delete loan for ${escapeHtml(loan.borrower)}" onclick="deleteLoan('${loan.id}')">🗑</button>
+        </div>
+
+        <div style="margin-top:10px;">${badge}</div>
+
+        <div class="loan-progress">
+          <div class="p-top"><span>Principal repaid</span><span>${fmtMoney(c.principalPaid)} of ${fmtMoney(c.principal)} · ${repaidPct.toFixed(0)}%</span></div>
+          <div class="loan-bar"><span style="width:${repaidPct.toFixed(2)}%"></span></div>
+        </div>
+
+        <div class="loan-stats">
+          <div class="loan-stat"><div class="s-val" style="color:var(--danger)">${fmtMoney(c.outstandingPrincipal)}</div><div class="s-lbl">Outstanding</div></div>
+          <div class="loan-stat"><div class="s-val" style="color:var(--carbs-c)">${fmtMoney(c.monthlyInterest)}</div><div class="s-lbl">Interest / mo</div></div>
+          <div class="loan-stat"><div class="s-val" style="color:var(--success)">${fmtMoney(c.interestPaid)}</div><div class="s-lbl">Interest received</div></div>
+        </div>
+
+        <div class="loan-actions">
+          <button class="act-btn act-int" onclick="toggleFinSection('ipay-box-${loan.id}','')">＋ Interest payment</button>
+          <button class="act-btn act-prin" onclick="toggleFinSection('ppay-box-${loan.id}','')">＋ Principal repayment</button>
+        </div>
+
+        <div id="ipay-box-${loan.id}" style="display:none;">
+          <div class="fin-sub">
+            <input type="date" id="ipay-date-${loan.id}" value="${today}">
+            <input type="number" id="ipay-amt-${loan.id}" placeholder="Interest ₹" step="0.01" min="0" style="width:110px;">
+            <input type="text" id="ipay-note-${loan.id}" placeholder="Note (optional)" style="min-width:120px;flex:1;">
+            <button class="btn btn-success btn-sm" onclick="addPayment('${loan.id}','interest')">Save</button>
+          </div>
+        </div>
+
+        <div id="ppay-box-${loan.id}" style="display:none;">
+          <div class="fin-sub">
+            <input type="date" id="ppay-date-${loan.id}" value="${today}">
+            <input type="number" id="ppay-amt-${loan.id}" placeholder="Principal ₹" step="0.01" min="0" style="width:110px;">
+            <input type="text" id="ppay-note-${loan.id}" placeholder="Note (optional)" style="min-width:120px;flex:1;">
+            <button class="btn btn-success btn-sm" onclick="addPayment('${loan.id}','principal')">Save</button>
+          </div>
+        </div>`;
+
+      const sched = c.schedule;
+
+      // ===== Monthly ledger (collapsible) =====
+      const ledgerId = `ledger-${loan.id}`, ledgerChev = `chev-l-${loan.id}`;
+      const ledgerOpen = editingPayment && editingPayment.startsWith('interest-') &&
+        (loan.interestPayments || []).some(p => `interest-${p.id}` === editingPayment);
+      html += `<div class="fin-toggle" onclick="toggleFinSection('${ledgerId}','${ledgerChev}')">
+        <span>📅 Monthly interest breakdown</span>
+        <span class="chev" id="${ledgerChev}" style="transform:rotate(${ledgerOpen ? 90 : 0}deg)">▶</span>
+      </div>
+      <div id="${ledgerId}" style="display:${ledgerOpen ? 'block' : 'none'};">`;
+      if (sched.cycles.length === 0) {
+        html += `<div class="fin-muted">First month due ${fmtDay(addMonths(loan.startDate, 1).toISOString().split('T')[0])}.</div>`;
+      } else {
+        sched.cycles.slice().reverse().forEach(cy => {
+          const due = cy.due;
+          const covered = cy.paid;                       // how much of this month's due is settled
+          const shortfall = Math.max(due - covered, 0);
+          let pill;
+          if (shortfall <= 0.01) pill = `<span class="pill pill-ok">✔ Paid</span>`;
+          else if (covered > 0.01) pill = `<span class="pill pill-due">${fmtMoney(shortfall)} due (partial)</span>`;
+          else pill = `<span class="pill pill-due">${fmtMoney(shortfall)} due</span>`;
+          html += `<div class="month-row">
+            <div>
+              <div class="m-title">Month ${cy.index} ${pill}</div>
+              <div class="fin-muted">${fmtDay(cy.start)} → ${fmtDay(cy.end)} · ${c.rate}% of ${fmtMoney(cy.outstanding)} = due ${fmtMoney(due)} · paid ${fmtMoney(covered)}</div>
+              ${cy.payments.map(pp => `<div class="fin-muted" style="margin-top:2px;">• ${fmtDay(pp.date)}: <span class="fin-pos">${fmtMoney(pp.amount)}</span>${pp.note ? ' — ' + escapeHtml(pp.note) : ''}</div>`).join('')}
+            </div>
+          </div>`;
+        });
+        const totalInstallmentAdvance = Object.values(sched.paymentAdvance || {}).reduce((s, v) => s + v, 0);
+        if (sched.advance > 0.01 || totalInstallmentAdvance > 0.01) {
+          html += `<div class="month-row" style="background:rgba(96,165,250,0.08);display:block;">
+            <div style="color:var(--fat-c);font-weight:700;">＋ Net advance credit ${fmtMoney(sched.advance)}</div>
+            <div class="fin-muted" style="margin-top:2px;">Advance paid across installments: ${fmtMoney(totalInstallmentAdvance)}${sched.advance < totalInstallmentAdvance - 0.01 ? ' · part of it was later used to cover pending months' : ''}</div>
+          </div>`;
+        }
+      }
+      // Editable/deletable interest payment list inside the ledger section
+      const iPays = (loan.interestPayments || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+      if (iPays.length > 0) {
+        const payAdv = sched.paymentAdvance || {};
+        const payPend = sched.paymentPending || {};
+        html += `<div class="fin-muted" style="margin:8px 0 4px;">All interest payments (edit/remove)</div>
+          <table class="fin-table"><tr><th>Date</th><th>Amount</th><th>Advance / Pending</th><th>Note</th><th></th></tr>`;
+        iPays.forEach(p => {
+          if (editingPayment === `interest-${p.id}`) {
+            html += editRowHtml(loan.id, 'interest', p, 5);
+          } else {
+            const adv = payAdv[p.id] || 0;
+            const pend = payPend[p.id] || 0;
+            let apCell;
+            if (adv > 0.01) apCell = '<span class="pill pill-adv">＋' + fmtMoney(adv) + ' advance</span>';
+            else if (pend > 0.01) apCell = '<span class="pill pill-due">－' + fmtMoney(pend) + ' pending</span>';
+            else apCell = '<span class="fin-muted">—</span>';
+            html += `<tr>
+              <td>${fmtDay(p.date)}</td>
+              <td class="fin-pos">${fmtMoney(p.amount)}</td>
+              <td>${apCell}</td>
+              <td class="fin-muted">${p.note ? escapeHtml(p.note) : '—'}</td>
+              <td style="text-align:right;white-space:nowrap;">
+                <button class="remove-btn" style="background:var(--fat-c);" title="Edit" onclick="startEditPayment('interest','${p.id}')">✎</button>
+                <button class="remove-btn" title="Delete" onclick="deletePayment('${loan.id}','interest','${p.id}')">✕</button>
+              </td>
+            </tr>`;
+          }
+        });
+        html += `</table>`;
+      }
+      html += `</div>`; // end ledger
+
+      // ===== Principal repayments (collapsible) =====
+      const prinId = `prin-${loan.id}`, prinChev = `chev-p-${loan.id}`;
+      const prinOpen = editingPayment && editingPayment.startsWith('principal-') &&
+        (loan.principalPayments || []).some(p => `principal-${p.id}` === editingPayment);
+      html += `<div class="fin-toggle" onclick="toggleFinSection('${prinId}','${prinChev}')">
+        <span>🏦 Principal repayments — repaid ${fmtMoney(c.principalPaid)}</span>
+        <span class="chev" id="${prinChev}" style="transform:rotate(${prinOpen ? 90 : 0}deg)">▶</span>
+      </div>
+      <div id="${prinId}" style="display:${prinOpen ? 'block' : 'none'};">`;
+      const pPays = (loan.principalPayments || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+      if (pPays.length === 0) {
+        html += `<div class="fin-muted">No principal repayments yet.</div>`;
+      } else {
+        html += `<table class="fin-table"><tr><th>Date</th><th>Amount</th><th>Note</th><th></th></tr>`;
+        pPays.forEach(p => {
+          if (editingPayment === `principal-${p.id}`) {
+            html += editRowHtml(loan.id, 'principal', p);
+          } else {
+            html += `<tr>
+              <td>${fmtDay(p.date)}</td>
+              <td class="fin-pos">${fmtMoney(p.amount)}</td>
+              <td class="fin-muted">${p.note ? escapeHtml(p.note) : '—'}</td>
+              <td style="text-align:right;white-space:nowrap;">
+                <button class="remove-btn" style="background:var(--fat-c);" title="Edit" onclick="startEditPayment('principal','${p.id}')">✎</button>
+                <button class="remove-btn" title="Delete" onclick="deletePayment('${loan.id}','principal','${p.id}')">✕</button>
+              </td>
+            </tr>`;
+          }
+        });
+        html += `</table>`;
+      }
+      html += `</div>`; // end principal
+
+      html += `</div>`; // end loan card
+    });
+  }
+
+  document.getElementById('fintab-lending').innerHTML = html;
+}
+
+function addLoan() {
+  const borrower = document.getElementById('loanBorrower').value.trim();
+  const principal = parseFloat(document.getElementById('loanPrincipal').value);
+  const rate = parseFloat(document.getElementById('loanRate').value) || 0;
+  const startDate = document.getElementById('loanStart').value;
+  const note = document.getElementById('loanNote').value.trim();
+
+  if (!borrower) { showToast('Borrower name is required', 'error'); return; }
+  if (!principal || principal <= 0) { showToast('Enter a valid amount', 'error'); return; }
+
+  state.finance.loans.push({
+    id: finId(), borrower, principal, rate,
+    startDate: startDate || new Date().toISOString().split('T')[0],
+    note, interestPayments: [], principalPayments: []
+  });
+  saveState();
+  renderLending();
+  showToast(`Loan to ${borrower} added`);
+}
+
+function deleteLoan(id) {
+  const loan = state.finance.loans.find(l => l.id === id);
+  if (!loan) return;
+  if (confirm(`Delete loan to "${loan.borrower}" and all its payment records?`)) {
+    state.finance.loans = state.finance.loans.filter(l => l.id !== id);
+    saveState();
+    renderLending();
+    showToast('Loan deleted');
+  }
+}
+
+function addPayment(loanId, kind) {
+  const loan = state.finance.loans.find(l => l.id === loanId);
+  if (!loan) return;
+  const prefix = kind === 'interest' ? 'ipay' : 'ppay';
+  const date = document.getElementById(`${prefix}-date-${loanId}`).value;
+  const amount = parseFloat(document.getElementById(`${prefix}-amt-${loanId}`).value);
+  const noteEl = document.getElementById(`${prefix}-note-${loanId}`);
+  const note = noteEl ? noteEl.value.trim() : '';
+  if (!amount || amount <= 0) { showToast('Enter a valid payment amount', 'error'); return; }
+  if (!date) { showToast('Select a payment date', 'error'); return; }
+
+  if (kind === 'principal') {
+    const c = calcLoan(loan);
+    if (amount > c.outstandingPrincipal + 0.01) {
+      showToast(`Amount exceeds outstanding principal (${fmtMoney(c.outstandingPrincipal)})`, 'error');
+      return;
+    }
+    if (!loan.principalPayments) loan.principalPayments = [];
+    loan.principalPayments.push({ id: finId(), date, amount, note });
+  } else {
+    if (!loan.interestPayments) loan.interestPayments = [];
+    loan.interestPayments.push({ id: finId(), date, amount, note });
+  }
+  saveState();
+  renderLending();
+  const label = kind === 'interest' ? 'interest' : 'principal';
+  showToast(`Recorded ${fmtMoney(amount)} ${label} from ${loan.borrower}`);
+}
+
+function deletePayment(loanId, kind, payId) {
+  const loan = state.finance.loans.find(l => l.id === loanId);
+  if (!loan) return;
+  if (kind === 'interest') {
+    loan.interestPayments = (loan.interestPayments || []).filter(p => p.id !== payId);
+  } else {
+    loan.principalPayments = (loan.principalPayments || []).filter(p => p.id !== payId);
+  }
+  saveState();
+  renderLending();
+}
+
+// Track which payment row is currently being edited: `${kind}-${payId}` or null.
+let editingPayment = null;
+
+function startEditPayment(kind, payId) {
+  editingPayment = `${kind}-${payId}`;
+  renderLending();
+}
+
+function cancelEditPayment() {
+  editingPayment = null;
+  renderLending();
+}
+
+function saveEditPayment(loanId, kind, payId) {
+  const loan = state.finance.loans.find(l => l.id === loanId);
+  if (!loan) return;
+  const list = kind === 'interest' ? (loan.interestPayments || []) : (loan.principalPayments || []);
+  const p = list.find(x => x.id === payId);
+  if (!p) return;
+
+  const date = document.getElementById(`edit-date-${payId}`).value;
+  const amount = parseFloat(document.getElementById(`edit-amt-${payId}`).value);
+  const note = document.getElementById(`edit-note-${payId}`).value.trim();
+  if (!amount || amount <= 0) { showToast('Enter a valid amount', 'error'); return; }
+  if (!date) { showToast('Select a date', 'error'); return; }
+
+  if (kind === 'principal') {
+    const otherRepaid = (loan.principalPayments || [])
+      .filter(x => x.id !== payId)
+      .reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    if (amount + otherRepaid > (Number(loan.principal) || 0) + 0.01) {
+      showToast(`Total principal repaid would exceed the loan (${fmtMoney(loan.principal)})`, 'error');
+      return;
+    }
+  }
+
+  p.date = date;
+  p.amount = amount;
+  p.note = note;
+  editingPayment = null;
+  saveState();
+  renderLending();
+  showToast('Payment updated');
+}
+
+// Render an editable payment row (used inside the ledger + principal tables).
+function editRowHtml(loanId, kind, p, colspan) {
+  return `<tr>
+    <td colspan="${colspan || 4}">
+      <div class="fin-sub" style="margin:2px 0;">
+        <input type="date" id="edit-date-${p.id}" value="${p.date}">
+        <input type="number" id="edit-amt-${p.id}" value="${p.amount}" step="0.01" min="0" style="width:110px;">
+        <input type="text" id="edit-note-${p.id}" value="${p.note ? escapeHtml(p.note) : ''}" placeholder="Note (optional)" style="min-width:120px;flex:1;">
+        <button class="btn btn-success btn-sm" onclick="saveEditPayment('${loanId}','${kind}','${p.id}')">💾 Save</button>
+        <button class="btn btn-danger btn-sm" onclick="cancelEditPayment()">✕</button>
+      </div>
+    </td>
+  </tr>`;
+}
+
+// ========================= INVESTMENTS TAB =========================
+function renderInvestments() {
+  const inv = state.finance.investments;
+  let totalInvested = 0, totalCurrent = 0;
+  inv.forEach(i => { totalInvested += Number(i.invested) || 0; totalCurrent += Number(i.current) || 0; });
+  const gain = totalCurrent - totalInvested;
+  const gainPct = totalInvested > 0 ? (gain / totalInvested * 100) : 0;
+
+  const gainColor = gain >= 0 ? 'var(--success)' : 'var(--danger)';
+  const sign = gain >= 0 ? '+' : '';
+
+  let html = `
+    <div class="fin-hero">
+      <div class="h-lbl">Portfolio value</div>
+      <div class="h-val" title="${fmtMoney(totalCurrent)}">${fmtMoneyShort(totalCurrent)}</div>
+      <div class="h-sub">Invested ${fmtMoney(totalInvested)} · <span style="color:${gainColor};font-weight:700;">${sign}${fmtMoney(gain)} (${sign}${gainPct.toFixed(1)}%)</span></div>
+      <div class="fin-tiles">
+        <div class="fin-tile"><div class="t-val" style="color:var(--fat-c)" title="${fmtMoney(totalInvested)}">${fmtMoneyShort(totalInvested)}</div><div class="t-lbl">Invested</div></div>
+        <div class="fin-tile"><div class="t-val" style="color:var(--accent)" title="${fmtMoney(totalCurrent)}">${fmtMoneyShort(totalCurrent)}</div><div class="t-lbl">Current</div></div>
+        <div class="fin-tile"><div class="t-val" style="color:${gainColor}" title="${fmtMoney(gain)}">${sign}${fmtMoneyShort(gain)}</div><div class="t-lbl">Gain / loss</div></div>
+        <div class="fin-tile"><div class="t-val" style="color:${gainColor}">${sign}${gainPct.toFixed(1)}%</div><div class="t-lbl">Return</div></div>
+      </div>
+    </div>
+
+    <div class="fin-sec-head">
+      <h3>💼 Holdings</h3>
+      <button class="fin-ghost-btn" onclick="toggleAddInvestment()">${showAddInvestment ? '✕ Cancel' : '＋ New holding'}</button>
+    </div>`;
+
+  if (showAddInvestment) {
+    html += `<div class="fin-panel">
+      <div class="fin-form">
+        <input type="text" id="invName" placeholder="Fund / Stock name *">
+        <select id="invType">
+          <option value="Mutual Fund">Mutual Fund</option>
+          <option value="Stock">Stock</option>
+          <option value="ETF">ETF</option>
+          <option value="Other">Other</option>
+        </select>
+        <input type="number" id="invInvested" placeholder="Amount invested (₹) *" step="0.01" min="0">
+        <input type="number" id="invCurrent" placeholder="Current value (₹)" step="0.01" min="0">
+        <input type="text" id="invNote" placeholder="Note (optional)">
+      </div>
+      <button class="btn btn-primary" onclick="addInvestment()">💾 Save holding</button>
+    </div>`;
+  }
+
+  if (inv.length === 0) {
+    html += `<div class="fin-empty">
+      <div class="e-icon">📈</div>
+      <div class="e-title">No holdings yet</div>
+      <div class="e-sub">Add a mutual fund, stock or ETF to track how it is doing.</div>
+    </div>`;
+  } else {
+    // Largest holdings first, so the portfolio's weighting is obvious at a glance.
+    const sorted = inv.slice().sort((a, b) => (Number(b.current) || 0) - (Number(a.current) || 0));
+    sorted.forEach(i => {
+      const invested = Number(i.invested) || 0;
+      const current = Number(i.current) || 0;
+      const g = current - invested;
+      const gp = invested > 0 ? (g / invested * 100) : 0;
+      const gc = g >= 0 ? 'var(--success)' : 'var(--danger)';
+      const gs = g >= 0 ? '+' : '';
+      const alloc = totalCurrent > 0 ? (current / totalCurrent * 100) : 0;
+
+      html += `<div class="inv-card">
+        <div class="inv-head">
+          <div>
+            <div class="inv-name">${escapeHtml(i.name)}</div>
+            <div style="margin-top:5px;">
+              <span class="fin-chip">${escapeHtml(i.type)}</span>
+              <span class="fin-muted">${alloc.toFixed(1)}% of portfolio</span>
+            </div>
+            ${i.note ? '<div class="fin-muted" style="margin-top:5px;">' + escapeHtml(i.note) + '</div>' : ''}
+          </div>
+          <button class="icon-btn" title="Delete holding" aria-label="Delete ${escapeHtml(i.name)}" onclick="deleteInvestment('${i.id}')">🗑</button>
+        </div>
+
+        <div class="alloc-bar"><span style="width:${alloc.toFixed(2)}%"></span></div>
+
+        <div class="inv-row">
+          <div class="col"><div class="c-lbl">Invested</div><div class="c-val">${fmtMoney(invested)}</div></div>
+          <div class="col"><div class="c-lbl">Gain / loss</div><div class="c-val" style="color:${gc}">${gs}${fmtMoney(g)} <span style="font-size:0.72rem;font-weight:600;">(${gs}${gp.toFixed(1)}%)</span></div></div>
+          <div class="col"><div class="c-lbl">Current value</div>
+            <input class="inv-input" type="number" value="${current}" step="0.01" title="Update current value"
+              onchange="updateInvestmentValue('${i.id}', this.value)">
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+
+  document.getElementById('fintab-investments').innerHTML = html;
+}
+
+function addInvestment() {
+  const name = document.getElementById('invName').value.trim();
+  const type = document.getElementById('invType').value;
+  const invested = parseFloat(document.getElementById('invInvested').value);
+  const current = parseFloat(document.getElementById('invCurrent').value);
+
+  if (!name) { showToast('Name is required', 'error'); return; }
+  if (!invested || invested <= 0) { showToast('Enter a valid invested amount', 'error'); return; }
+
+  state.finance.investments.push({
+    id: finId(), name, type, invested,
+    current: (current && current > 0) ? current : invested,
+    note: document.getElementById('invNote').value.trim()
+  });
+  saveState();
+  renderInvestments();
+  showToast(`Added ${name}`);
+}
+
+function updateInvestmentValue(id, value) {
+  const item = state.finance.investments.find(i => i.id === id);
+  if (!item) return;
+  item.current = parseFloat(value) || 0;
+  saveState();
+  renderInvestments();
+}
+
+function deleteInvestment(id) {
+  const item = state.finance.investments.find(i => i.id === id);
+  if (!item) return;
+  if (confirm(`Delete holding "${item.name}"?`)) {
+    state.finance.investments = state.finance.investments.filter(i => i.id !== id);
+    saveState();
+    renderInvestments();
+    showToast('Holding deleted');
+  }
+}
+
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+
+// ========== QUICK ADD ==========
+function renderQuickAdd() {
+  const quickFoods = getQuickAddFoods();
+  if (quickFoods.length === 0) return '';
+  let html = `<div class="card quick-add-section"><h3>⚡ Quick Add (Frequently Used)</h3><div class="quick-add-grid">`;
+  quickFoods.forEach(f => {
+    html += `<span class="quick-add-btn" style="display:inline-flex;align-items:center;gap:5px;">
+      <span onclick="quickAddFood('${f.name.replace(/'/g,"\\'")}')" style="cursor:pointer">${f.name} (${f.cal} kcal)</span>
+      <span onclick="hideQuickAdd('${f.name.replace(/'/g,"\\'")}')" style="cursor:pointer;color:#e74c3c;font-weight:bold;font-size:0.7rem;" title="Remove from Quick Add">✕</span>
+    </span>`;
+  });
+  html += `</div></div>`;
+  return html;
+}
+
+function getQuickAddFoods() {
+  // Get hidden foods list
+  const hidden = JSON.parse(localStorage.getItem('hiddenQuickAdd') || '[]');
+  // Count how often each food appears across all daily logs
+  const freq = {};
+  Object.values(state.dailyLogs).forEach(log => {
+    if (log.meals) {
+      log.meals.forEach(meal => {
+        meal.forEach(item => {
+          freq[item.name] = (freq[item.name] || 0) + 1;
+        });
+      });
+    }
+  });
+  // Sort by frequency, exclude hidden, return top 8
+  return Object.entries(freq)
+    .filter(([name]) => !hidden.includes(name))
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([name]) => state.foodDB.find(f => f.name === name))
+    .filter(Boolean);
+}
+
+function hideQuickAdd(name) {
+  const hidden = JSON.parse(localStorage.getItem('hiddenQuickAdd') || '[]');
+  if (!hidden.includes(name)) {
+    hidden.push(name);
+    localStorage.setItem('hiddenQuickAdd', JSON.stringify(hidden));
+  }
+  renderDaily();
+  showToast(`Removed "${name}" from Quick Add. Log it again to bring it back.`);
+}
+
+function unhideQuickAdd(name) {
+  let hidden = JSON.parse(localStorage.getItem('hiddenQuickAdd') || '[]');
+  hidden = hidden.filter(n => n !== name);
+  localStorage.setItem('hiddenQuickAdd', JSON.stringify(hidden));
+}
+
+function quickAddFood(name) {
+  selectedFood = state.foodDB.find(f => f.name === name);
+  if (!selectedFood) return;
+  document.getElementById('addFoodModal').classList.add('active');
+  document.getElementById('modalFoodSearch').value = name;
+  document.getElementById('modalQty').value = selectedFood.qty;
+  document.getElementById('modalFoodPreview').textContent =
+    `Per ${selectedFood.qty} ${selectedFood.unit}: ${selectedFood.cal} kcal | P:${selectedFood.protein}g | C:${selectedFood.carbs}g | F:${selectedFood.fat}g`;
+  document.getElementById('modalSearchResults').style.display = 'none';
+}
+
+// ========== AUTO CALCULATE CALORIES ==========
+function autoCalcCalories() {
+  const protein = parseFloat(document.getElementById('nfProtein').value) || 0;
+  const carbs = parseFloat(document.getElementById('nfCarbs').value) || 0;
+  const fat = parseFloat(document.getElementById('nfFat').value) || 0;
+  const cal = Math.round(protein * 4 + carbs * 4 + fat * 9);
+  document.getElementById('nfCal').value = cal;
+  document.getElementById('nfCalcHint').textContent = `Auto: ${protein}×4 + ${carbs}×4 + ${fat}×9 = ${cal} kcal`;
+}
+
+function autoCalcDirectCal() {
+  const protein = parseFloat(document.getElementById('dlProtein').value) || 0;
+  const carbs = parseFloat(document.getElementById('dlCarbs').value) || 0;
+  const fat = parseFloat(document.getElementById('dlFat').value) || 0;
+  const cal = Math.round(protein * 4 + carbs * 4 + fat * 9);
+  document.getElementById('dlCal').value = cal;
+  document.getElementById('dlCalcHint').textContent = `Auto: ${protein}×4 + ${carbs}×4 + ${fat}×9 = ${cal} kcal`;
+}
+
+// ========== DIRECT CALORIE LOG ==========
+function openDirectLogModal() {
+  document.getElementById('directLogModal').classList.add('active');
+  ['dlName','dlProtein','dlCarbs','dlFat','dlCal'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('dlCalcHint').textContent = 'Calories auto-calculate from macros, or enter manually';
+}
+
+function closeDirectLogModal() {
+  document.getElementById('directLogModal').classList.remove('active');
+}
+
+function saveDirectLog() {
+  const name = document.getElementById('dlName').value.trim() || 'Manual entry';
+  const mealIdx = parseInt(document.getElementById('dlMealSelect').value);
+  const protein = parseFloat(document.getElementById('dlProtein').value) || 0;
+  const carbs = parseFloat(document.getElementById('dlCarbs').value) || 0;
+  const fat = parseFloat(document.getElementById('dlFat').value) || 0;
+  let cal = parseFloat(document.getElementById('dlCal').value) || 0;
+
+  if (cal === 0 && protein === 0 && carbs === 0 && fat === 0) {
+    showToast('Enter at least calories or macros', 'error');
+    return;
+  }
+  // If calories is 0 but macros exist, auto-calc
+  if (cal === 0) { cal = Math.round(protein * 4 + carbs * 4 + fat * 9); }
+
+  const entry = { name, qty: 1, unit: 'serving', protein, carbs, fat, cal, fibre: 0 };
+  const log = getLog(state.currentDate);
+  log.meals[mealIdx].push(entry);
+  saveState();
+  closeDirectLogModal();
+  renderDaily();
+  showToast(`Logged ${cal} kcal to Meal ${mealIdx + 1}`);
+}
+
+// ========== BACKUP REMINDER ==========
+function renderBackupReminder() {
+  const lastBackup = localStorage.getItem('lastBackupDate');
+  const today = new Date().toISOString().split('T')[0];
+  let daysSinceBackup = 0;
+  if (lastBackup) {
+    daysSinceBackup = Math.floor((new Date(today) - new Date(lastBackup)) / (1000*60*60*24));
+  } else {
+    daysSinceBackup = 999;
+  }
+  if (daysSinceBackup >= 7) {
+    return `<div class="backup-banner">
+      <span>⚠️ ${lastBackup ? 'Last backup: ' + daysSinceBackup + ' days ago' : 'No backup yet!'} — Export your data to stay safe.</span>
+      <button class="btn btn-success btn-sm" onclick="doBackup()">📤 Backup Now</button>
+    </div>`;
+  }
+  return '';
+}
+
+function doBackup() {
+  exportData();
+  localStorage.setItem('lastBackupDate', new Date().toISOString().split('T')[0]);
+  renderDaily();
+}
+
+// Start the app
+init();
+</script>
+
+<script>
+// ===== Service worker: offline support + home-screen install =====
+// Skipped on file:// since service workers require http/https. Opening this file
+// directly still works as a plain page; you just don't get offline caching.
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(err => console.warn('Service worker registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>
