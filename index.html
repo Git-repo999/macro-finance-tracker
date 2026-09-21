@@ -18,35 +18,163 @@
 <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
+/* ===== Theme variables =====
+ * Every color in the app should be one of these variables (or a literal white/black used
+ * intentionally on top of a saturated background, e.g. button label text). Themes are defined
+ * as [data-theme="<name>"] blocks further down and applied via setTheme() in the app script.
+ * :root holds the fallback/default palette ("Midnight", the original dark theme). */
 :root {
   --bg-primary: #0f0f23;
   --bg-card: rgba(35,36,72,0.8);
   --text-primary: #eef0f6;
   --text-secondary: #9ca3c4;
+  --btn-text: #ffffff;
+
   --accent: #7c5cff;
   --accent-glow: rgba(124,92,255,0.3);
+  --accent-2: #60a5fa;             /* second stop for accent-colored gradients (loan/alloc bars) */
   --border: rgba(124,92,255,0.2);
+
+  /* Secondary "gold" accent: weekly highlights, backup banner, steps/avg-cal stats. */
+  --accent2: #ffd700;
+  --accent2-glow: rgba(255,215,0,0.18);
+
+  /* Macro palette + their gradient second-stops (progress bars use both). */
   --protein-c: #f472b6;
+  --protein-c-2: #ec4899;
   --carbs-c: #facc15;
+  --carbs-c-2: #eab308;
   --fat-c: #60a5fa;
+  --fat-c-2: #3b82f6;
+  --fat-glow: rgba(96,165,250,0.18);
   --cal-c: #34d399;
+  --cal-c-2: #10b981;
+
   --success: #10b981;
+  --success-glow: rgba(16,185,129,0.18);
   --danger: #ef4444;
+  --danger-glow: rgba(239,68,68,0.18);
   --warning: #f59e0b;
+  --warning-glow: rgba(245,158,11,0.18);
+
+  /* Generic translucent overlays for hover/border states on top of --bg-card, replacing the old
+   * hardcoded rgba(255,255,255,x) ladder. Dark themes lighten, light themes darken. */
+  --overlay-1: rgba(255,255,255,0.05);
+  --overlay-2: rgba(255,255,255,0.08);
+  --overlay-3: rgba(255,255,255,0.15);
+  --overlay-4: rgba(255,255,255,0.2);
 }
-[data-theme="light"] {
-  --bg-primary: #f4f4f8;
-  --bg-card: #ffffff;
-  --text-primary: #1e1e2e;
-  --text-secondary: #6b7280;
-  --accent: #7c5cff;
-  --accent-glow: rgba(124,92,255,0.15);
+/* ===== Theme registry =====
+ * Each theme redefines every variable declared in :root above. [data-theme="midnight"] is
+ * identical to :root and exists so it can be selected explicitly (rather than only being a
+ * fallback), and so light themes have something to diff against. */
+[data-theme="midnight"] {
+  --bg-primary: #0f0f23; --bg-card: rgba(35,36,72,0.8);
+  --text-primary: #eef0f6; --text-secondary: #9ca3c4; --btn-text: #ffffff;
+  --accent: #7c5cff; --accent-glow: rgba(124,92,255,0.3); --accent-2: #60a5fa;
+  --border: rgba(124,92,255,0.2);
+  --accent2: #ffd700; --accent2-glow: rgba(255,215,0,0.18);
+  --protein-c: #f472b6; --protein-c-2: #ec4899;
+  --carbs-c: #facc15; --carbs-c-2: #eab308;
+  --fat-c: #60a5fa; --fat-c-2: #3b82f6; --fat-glow: rgba(96,165,250,0.18);
+  --cal-c: #34d399; --cal-c-2: #10b981;
+  --success: #10b981; --success-glow: rgba(16,185,129,0.18);
+  --danger: #ef4444; --danger-glow: rgba(239,68,68,0.18);
+  --warning: #f59e0b; --warning-glow: rgba(245,158,11,0.18);
+  --overlay-1: rgba(255,255,255,0.05); --overlay-2: rgba(255,255,255,0.08);
+  --overlay-3: rgba(255,255,255,0.15); --overlay-4: rgba(255,255,255,0.2);
+}
+
+[data-theme="daylight"] {
+  --bg-primary: #f4f4f8; --bg-card: #ffffff;
+  --text-primary: #1e1e2e; --text-secondary: #6b7280; --btn-text: #ffffff;
+  --accent: #7c5cff; --accent-glow: rgba(124,92,255,0.15); --accent-2: #2563eb;
   --border: rgba(124,92,255,0.12);
-  --protein-c: #db2777;
-  --carbs-c: #ca8a04;
-  --fat-c: #2563eb;
-  --cal-c: #059669;
+  --accent2: #b45309; --accent2-glow: rgba(180,83,9,0.14);
+  --protein-c: #db2777; --protein-c-2: #be185d;
+  --carbs-c: #ca8a04; --carbs-c-2: #a16207;
+  --fat-c: #2563eb; --fat-c-2: #1d4ed8; --fat-glow: rgba(37,99,235,0.14);
+  --cal-c: #059669; --cal-c-2: #047857;
+  --success: #059669; --success-glow: rgba(5,150,105,0.14);
+  --danger: #dc2626; --danger-glow: rgba(220,38,38,0.14);
+  --warning: #d97706; --warning-glow: rgba(217,119,6,0.14);
+  --overlay-1: rgba(15,15,35,0.04); --overlay-2: rgba(15,15,35,0.06);
+  --overlay-3: rgba(15,15,35,0.12); --overlay-4: rgba(15,15,35,0.16);
 }
+
+/* Ignite: near-black background, fire-orange accent, warm gold secondary. Matches the
+ * reference calorie-tracker UI kit (big number readout, gradient bars, fire iconography). */
+[data-theme="ignite"] {
+  --bg-primary: #0a0a0a; --bg-card: #161616;
+  --text-primary: #f5f5f5; --text-secondary: #9a9a9a; --btn-text: #ffffff;
+  --accent: #ff6a1a; --accent-glow: rgba(255,106,26,0.3); --accent-2: #ff3d3d;
+  --border: rgba(255,106,26,0.2);
+  --accent2: #ffb020; --accent2-glow: rgba(255,176,32,0.18);
+  --protein-c: #ff5c7a; --protein-c-2: #e0304f;
+  --carbs-c: #4da3ff; --carbs-c-2: #2f7fe0;
+  --fat-c: #ffcd3c; --fat-c-2: #eaa900; --fat-glow: rgba(255,205,60,0.2);
+  --cal-c: #ff6a1a; --cal-c-2: #ff3d3d;
+  --success: #22c55e; --success-glow: rgba(34,197,94,0.2);
+  --danger: #ef4444; --danger-glow: rgba(239,68,68,0.2);
+  --warning: #ffb020; --warning-glow: rgba(255,176,32,0.2);
+  --overlay-1: rgba(255,255,255,0.05); --overlay-2: rgba(255,255,255,0.08);
+  --overlay-3: rgba(255,255,255,0.15); --overlay-4: rgba(255,255,255,0.2);
+}
+
+/* Ocean: deep teal/navy, cool cyan accent. */
+[data-theme="ocean"] {
+  --bg-primary: #071a24; --bg-card: rgba(15,45,58,0.85);
+  --text-primary: #e8f5f8; --text-secondary: #8fb3c0; --btn-text: #04222c;
+  --accent: #22d3ee; --accent-glow: rgba(34,211,238,0.28); --accent-2: #38bdf8;
+  --border: rgba(34,211,238,0.2);
+  --accent2: #facc15; --accent2-glow: rgba(250,204,21,0.18);
+  --protein-c: #fb7185; --protein-c-2: #f43f5e;
+  --carbs-c: #fbbf24; --carbs-c-2: #f59e0b;
+  --fat-c: #38bdf8; --fat-c-2: #0ea5e9; --fat-glow: rgba(56,189,248,0.2);
+  --cal-c: #2dd4bf; --cal-c-2: #14b8a6;
+  --success: #2dd4bf; --success-glow: rgba(45,212,191,0.2);
+  --danger: #fb7185; --danger-glow: rgba(251,113,133,0.2);
+  --warning: #fbbf24; --warning-glow: rgba(251,191,36,0.2);
+  --overlay-1: rgba(255,255,255,0.05); --overlay-2: rgba(255,255,255,0.08);
+  --overlay-3: rgba(255,255,255,0.15); --overlay-4: rgba(255,255,255,0.2);
+}
+
+/* Forest: near-black green, emerald accent. Calm, natural feel. */
+[data-theme="forest"] {
+  --bg-primary: #0b1410; --bg-card: rgba(20,36,28,0.85);
+  --text-primary: #eaf3ec; --text-secondary: #93a89b; --btn-text: #06120b;
+  --accent: #34d399; --accent-glow: rgba(52,211,153,0.28); --accent-2: #22c55e;
+  --border: rgba(52,211,153,0.2);
+  --accent2: #d9a34a; --accent2-glow: rgba(217,163,74,0.18);
+  --protein-c: #f472b6; --protein-c-2: #ec4899;
+  --carbs-c: #eab308; --carbs-c-2: #ca8a04;
+  --fat-c: #60a5fa; --fat-c-2: #3b82f6; --fat-glow: rgba(96,165,250,0.2);
+  --cal-c: #4ade80; --cal-c-2: #22c55e;
+  --success: #4ade80; --success-glow: rgba(74,222,128,0.2);
+  --danger: #f87171; --danger-glow: rgba(248,113,113,0.2);
+  --warning: #d9a34a; --warning-glow: rgba(217,163,74,0.2);
+  --overlay-1: rgba(255,255,255,0.05); --overlay-2: rgba(255,255,255,0.08);
+  --overlay-3: rgba(255,255,255,0.15); --overlay-4: rgba(255,255,255,0.2);
+}
+
+/* Rose: soft light pink/cream background, magenta accent. A warmer alternative to Daylight. */
+[data-theme="rose"] {
+  --bg-primary: #fdf2f6; --bg-card: #ffffff;
+  --text-primary: #3b1f2b; --text-secondary: #8a6b78; --btn-text: #ffffff;
+  --accent: #e0356b; --accent-glow: rgba(224,53,107,0.15); --accent-2: #f472b6;
+  --border: rgba(224,53,107,0.14);
+  --accent2: #c2703d; --accent2-glow: rgba(194,112,61,0.15);
+  --protein-c: #e0356b; --protein-c-2: #be1857;
+  --carbs-c: #d97706; --carbs-c-2: #b45309;
+  --fat-c: #7c5cff; --fat-c-2: #6d4bef; --fat-glow: rgba(124,92,255,0.14);
+  --cal-c: #16a34a; --cal-c-2: #15803d;
+  --success: #16a34a; --success-glow: rgba(22,163,74,0.14);
+  --danger: #dc2626; --danger-glow: rgba(220,38,38,0.14);
+  --warning: #c2703d; --warning-glow: rgba(194,112,61,0.14);
+  --overlay-1: rgba(59,31,43,0.04); --overlay-2: rgba(59,31,43,0.06);
+  --overlay-3: rgba(59,31,43,0.12); --overlay-4: rgba(59,31,43,0.16);
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg-primary);
@@ -64,7 +192,17 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 /* Header with theme toggle */
 .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
 .header-title { display: flex; align-items: center; gap: 8px; }
-.theme-toggle { background: var(--bg-card); border: 1px solid var(--border); border-radius: 50%; width: 38px; height: 38px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+.theme-picker {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px;
+  padding: 8px 14px; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--text-primary);
+  appearance: none; -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%), linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
+  background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+  background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+  padding-right: 30px;
+}
+.theme-picker:focus { outline: none; border-color: var(--accent); }
+.theme-picker option { background: var(--bg-card); color: var(--text-primary); }
 .back-btn {
   background: var(--bg-card); border: 1px solid var(--border); border-radius: 50%;
   width: 38px; height: 38px; flex: 0 0 38px; cursor: pointer; font-size: 1.2rem;
@@ -74,8 +212,12 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 
 /* ===== Home screen: the two launch tiles ===== */
 .home-screen {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
-  margin: 24px auto; max-width: 480px;
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+  gap: 16px;
+  margin: 24px auto; 
+  max-width: 600px;
+  padding: 0 16px;
 }
 .home-tile {
   aspect-ratio: 1 / 1; border: 1px solid var(--border); border-radius: 22px;
@@ -95,21 +237,150 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .home-tile-macro .home-tile-icon { filter: drop-shadow(0 0 14px rgba(52,211,153,0.35)); }
 .home-tile-finance .home-tile-icon { filter: drop-shadow(0 0 14px rgba(124,92,255,0.4)); }
 
+@media (max-width: 500px) {
+  .home-screen { 
+    grid-template-columns: 1fr; 
+    max-width: 280px; 
+    gap: 14px; 
+  }
+  .home-tile { padding: 16px; }
+}
+
 @media (max-width: 380px) {
-  .home-screen { gap: 12px; margin: 16px auto; }
+  .home-screen { gap: 12px; margin: 16px auto; padding: 0 12px; }
   .home-tile { border-radius: 18px; padding: 12px; }
   .home-tile-icon { font-size: 2rem; }
 }
 
-/* Navigation Tabs */
-.nav-tabs { display: flex; gap: 4px; margin: 10px 0; background: var(--bg-card); padding: 4px; border-radius: 14px; border: 1px solid var(--border); }
-.nav-tabs button {
-  flex: 1; padding: 10px 16px; border: none; border-radius: 10px; cursor: pointer;
-  font-size: 0.85rem; font-weight: 600; transition: all 0.3s;
-  background: transparent; color: var(--text-secondary);
+/* Module Header with Menu Button */
+.module-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
 }
-.nav-tabs button.active { background: var(--accent); color: #fff; box-shadow: 0 2px 10px var(--accent-glow); }
-.nav-tabs button:hover:not(.active) { color: var(--text-primary); }
+.module-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.module-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+.module-title-text {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Menu Button (☰ Icon) */
+.menu-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  position: relative;
+}
+.menu-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--btn-text);
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  min-width: 180px;
+  overflow: hidden;
+  z-index: 100;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.dropdown-menu.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-weight: 500;
+}
+.dropdown-item:hover {
+  background: var(--accent);
+  color: var(--btn-text);
+  font-weight: 600;
+}
+.dropdown-item.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.dropdown-item-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Navigation Tabs (for Finance module) - Segmented Control Style */
+.nav-tabs { 
+  display: inline-flex; 
+  gap: 3px; 
+  margin: 10px 0; 
+  background: var(--overlay-2); 
+  padding: 3px; 
+  border-radius: 10px; 
+  border: none; 
+}
+.nav-tabs button {
+  padding: 8px 20px; 
+  border: none; 
+  border-radius: 8px; 
+  cursor: pointer;
+  font-size: 0.85rem; 
+  font-weight: 600; 
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: transparent; 
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.nav-tabs button.active { 
+  background: var(--bg-card); 
+  color: var(--text-primary); 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06); 
+}
+.nav-tabs button:hover:not(.active) { 
+  color: var(--text-primary); 
+  background: rgba(255,255,255,0.05);
+}
 
 /* Cards */
 .card {
@@ -136,14 +407,17 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
     <button class="back-btn" id="homeBackBtn" onclick="showHome()" title="Back to Home" aria-label="Back to Home" style="display:none;">←</button>
     <h1 id="appTitle">Tracker</h1>
   </div>
-  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Toggle Dark/Light">🌙</button>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <button class="icon-btn" onclick="showModule('settings')" title="Settings" style="font-size:1.3rem;">⚙️</button>
+    <select class="theme-picker" id="themePicker" title="Choose theme" onchange="setTheme(this.value)"></select>
+  </div>
 </div>
 
 <!-- Home screen: two square tiles, shown at launch and via the back button -->
 <div id="home-screen" class="home-screen">
   <button class="home-tile home-tile-macro" onclick="showModule('macro')">
     <span class="home-tile-icon">🥗</span>
-    <span class="home-tile-label">Macro Tracker</span>
+    <span class="home-tile-label">Nutrition</span>
     <span class="home-tile-sub" id="homeMacroSub">Calories &amp; activity</span>
   </button>
   <button class="home-tile home-tile-finance" onclick="showModule('finance')">
@@ -155,10 +429,28 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 
 <!-- Macro module -->
 <div id="module-macro" style="display:none">
-  <div class="nav-tabs">
-    <button class="active" onclick="showTab('daily')">📅 Daily</button>
-    <button onclick="showTab('weekly')">📊 Weekly</button>
-    <button onclick="showTab('settings')">⚙️ Settings</button>
+  <div class="module-header">
+    <div class="module-header-left">
+      <div style="position:relative;">
+        <button class="menu-btn" id="macroMenuBtn" onclick="toggleMacroMenu()" title="Menu">☰</button>
+        <div class="dropdown-menu" id="macroDropdown">
+          <button class="dropdown-item active" onclick="showTab('daily')" data-tab="daily">
+            <span class="dropdown-item-icon">📅</span>
+            <span>Daily</span>
+          </button>
+          <button class="dropdown-item" onclick="showTab('weekly')" data-tab="weekly">
+            <span class="dropdown-item-icon">📊</span>
+            <span>Weekly</span>
+          </button>
+          <button class="dropdown-item" onclick="showTab('settings')" data-tab="settings">
+            <span class="dropdown-item-icon">⚙️</span>
+            <span>Settings</span>
+          </button>
+        </div>
+      </div>
+      <span class="module-icon">🥗</span>
+      <span class="module-title-text"><span id="currentTabName">Daily</span></span>
+    </div>
   </div>
   <div id="tab-daily"></div>
   <div id="tab-weekly" style="display:none"></div>
@@ -167,13 +459,34 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 
 <!-- Finance module -->
 <div id="module-finance" style="display:none">
-  <div class="nav-tabs">
-    <button class="active" onclick="showFinTab('lending')">🤝 Lending</button>
-    <button onclick="showFinTab('investments')">📈 Investments</button>
+  <div class="module-header">
+    <div class="module-header-left">
+      <div style="position:relative;">
+        <button class="menu-btn" id="financeMenuBtn" onclick="toggleFinanceMenu()" title="Menu">☰</button>
+        <div class="dropdown-menu" id="financeDropdown">
+          <button class="dropdown-item active" onclick="showFinTab('lending')" data-tab="lending">
+            <span class="dropdown-item-icon">🤝</span>
+            <span>Lending</span>
+          </button>
+          <button class="dropdown-item" onclick="showFinTab('investments')" data-tab="investments">
+            <span class="dropdown-item-icon">📈</span>
+            <span>Investments</span>
+          </button>
+        </div>
+      </div>
+      <span class="module-icon">💰</span>
+      <span class="module-title-text"><span id="currentFinTabName">Lending</span></span>
+    </div>
   </div>
   <div id="fintab-lending"></div>
   <div id="fintab-investments" style="display:none"></div>
 </div>
+
+<!-- Settings module -->
+<div id="module-settings" style="display:none">
+  <div id="settings-content"></div>
+</div>
+
 </div>
 <style>
 /* Progress Bars */
@@ -181,10 +494,10 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .progress-label { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 3px; color: var(--text-secondary); }
 .progress-bar { height: 10px; border-radius: 5px; background: var(--bg-card); overflow: hidden; border: 1px solid var(--border); }
 .progress-fill { height: 100%; border-radius: 5px; transition: width 0.4s ease; }
-.protein-color { background: linear-gradient(90deg, #f472b6, #ec4899); }
-.carbs-color { background: linear-gradient(90deg, #facc15, #eab308); }
-.fat-color { background: linear-gradient(90deg, #60a5fa, #3b82f6); }
-.cal-color { background: linear-gradient(90deg, #34d399, #10b981); }
+.protein-color { background: linear-gradient(90deg, var(--protein-c), var(--protein-c-2)); }
+.carbs-color { background: linear-gradient(90deg, var(--carbs-c), var(--carbs-c-2)); }
+.fat-color { background: linear-gradient(90deg, var(--fat-c), var(--fat-c-2)); }
+.cal-color { background: linear-gradient(90deg, var(--cal-c), var(--cal-c-2)); }
 
 /* Summary Cards */
 .macro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 10px 0; }
@@ -192,24 +505,261 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .macro-card .value { font-size: 1.4rem; font-weight: 800; }
 .macro-card .label { font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; }
 
-/* Activity Section */
-.activity-row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
-.checkbox-group { display: flex; align-items: center; gap: 5px; }
-.checkbox-group input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; }
-.checkbox-group label { font-size: 0.85rem; cursor: pointer; color: var(--text-primary); }
-.input-sm {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 8px; padding: 6px 10px; color: var(--text-primary); width: 100px; font-size: 0.85rem;
+/* ---- Calorie goal hero: big readout, gauge bar, macro tiles (Ignite-style) ---- */
+.cal-hero {
+  background: linear-gradient(160deg, var(--accent-glow), transparent 65%);
+  border: 1px solid var(--border); border-radius: 18px; padding: 18px; margin: 10px 0;
 }
-.input-sm:focus { outline: none; border-color: var(--accent); }
+.cal-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cal-hero.style-ring .cal-hero-top .cal-hero-icon { visibility: hidden; }
+.cal-hero-icon { font-size: 1.8rem; line-height: 1; filter: drop-shadow(0 0 10px var(--accent-glow)); }
+.cal-hero-num { font-size: 2.3rem; font-weight: 800; line-height: 1.1; margin-top: 6px; color: var(--text-primary); }
+.cal-hero-num.over { color: var(--danger); }
+.cal-hero-sub { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; }
+.cal-gauge { height: 12px; border-radius: 8px; background: var(--overlay-2); border: 1px solid var(--border); overflow: hidden; margin-top: 16px; position: relative; }
+.cal-gauge-fill { height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--cal-c), var(--accent)); transition: width 0.4s ease; position: relative; }
+.cal-gauge-fill.over { background: linear-gradient(90deg, var(--danger), var(--accent-2)); }
+.cal-gauge-dot {
+  position: absolute; top: 50%; right: -2px; transform: translate(50%, -50%);
+  width: 14px; height: 14px; border-radius: 50%; background: var(--text-primary);
+  border: 3px solid var(--accent); box-shadow: 0 1px 6px rgba(0,0,0,0.3);
+}
+
+/* ---- Circular ring gauges: one big "active" ring + a row of small clickable rings ---- */
+.ring-side-by-side {
+  display: flex; align-items: center; justify-content: center; gap: 22px;
+  margin-top: 14px; flex-wrap: wrap;
+}
+.ring-group { display: flex; flex-direction: column; align-items: center; }
+.ring-group-calories { flex: 0 0 auto; }
+.ring-group-macros {
+  flex: 0 0 auto; padding-left: 22px; border-left: 1px solid var(--border);
+}
+.ring-item { display: flex; flex-direction: column; align-items: center; }
+.ring-item.ring-clickable { cursor: pointer; }
+.ring-shape { position: relative; transition: width 0.25s ease, height 0.25s ease; }
+.ring-shape svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-shape circle { fill: none; }
+.ring-shape .ring-track { stroke: var(--overlay-2); }
+.ring-shape .ring-fill { stroke-linecap: round; transition: stroke-dashoffset 0.4s ease, stroke 0.3s ease; }
+.ring-center {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; padding: 6px;
+}
+.ring-big .r-pct { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); }
+.ring-big .r-lbl { font-size: 0.68rem; color: var(--text-secondary); margin-top: 2px; }
+.ring-medium { margin-bottom: 14px; }
+.ring-medium .r-pct { font-size: 1.25rem; font-weight: 800; color: var(--text-primary); }
+.ring-medium .r-lbl { font-size: 0.62rem; color: var(--text-secondary); margin-top: 2px; }
+.ring-small-row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.ring-small { opacity: 0.85; transition: opacity 0.2s ease, transform 0.2s ease; }
+.ring-small:hover { opacity: 1; transform: translateY(-2px); }
+.ring-small .r-pct { font-size: 0.85rem; font-weight: 800; color: var(--text-primary); }
+.ring-small .r-lbl { font-size: 0.56rem; color: var(--text-secondary); }
+.ring-small-name { font-size: 0.66rem; color: var(--text-secondary); margin-top: 6px; font-weight: 600; }
+
+@media (max-width: 480px) {
+  .ring-side-by-side { flex-direction: column; }
+  .ring-group-macros { padding-left: 0; border-left: none; padding-top: 18px; border-top: 1px solid var(--border); }
+}
+.ring-small.is-active .ring-small-name { color: var(--accent); }
+
+/* ---- Progress style picker (straight vs circular), same look as the theme picker ---- */
+.style-picker {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px;
+  padding: 8px 14px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: var(--text-primary);
+  appearance: none; -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%), linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
+  background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+  background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 30px;
+}
+.style-picker:focus { outline: none; border-color: var(--accent); }
+.style-picker option { background: var(--bg-card); color: var(--text-primary); }
+.macro-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px; }
+.macro-tile { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 8px; text-align: center; }
+.macro-tile .m-val { font-size: 1rem; font-weight: 800; }
+.macro-tile .m-lbl { font-size: 0.65rem; color: var(--text-secondary); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.03em; }
+.macro-tile .m-bar { height: 3px; border-radius: 2px; background: var(--overlay-2); margin-top: 6px; overflow: hidden; }
+.macro-tile .m-bar > span { display: block; height: 100%; border-radius: 2px; }
+.cal-hero-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+.cal-edit-btn {
+  flex: 1; min-width: 140px; border: none; border-radius: 12px; padding: 12px; font-size: 0.85rem;
+  font-weight: 700; cursor: pointer; color: var(--btn-text); background: var(--accent);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.cal-edit-btn:hover { filter: brightness(1.08); }
+
+/* Activity Section */
+.activity-row { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; margin: 10px 0; }
+
+/* Weight training / cardio toggles, styled as pressable pill buttons rather than raw checkboxes. */
+.activity-toggle {
+  display: flex; align-items: center; gap: 7px; padding: 10px 14px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--bg-card); cursor: pointer;
+  font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+.activity-toggle input[type="checkbox"] { display: none; }
+.activity-toggle:active { transform: scale(0.97); }
+.activity-toggle.checked { 
+  background: var(--accent); 
+  border-color: var(--accent); 
+  color: var(--btn-text); 
+  font-weight: 600;
+}
+
+/* Steps / weight, styled as icon-led stat pills so they read as data entry, not raw inputs. */
+.stat-input { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px;
+  background: var(--bg-card); border: 1px solid var(--border); flex: 1; min-width: 130px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.stat-input .stat-icon { font-size: 1.1rem; flex: 0 0 auto; }
+.stat-input .stat-fields { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.stat-input .stat-lbl { font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
+.stat-input input {
+  border: none; background: transparent; color: var(--text-primary); font-size: 0.95rem;
+  font-weight: 700; padding: 0; width: 100%; outline: none;
+}
+.stat-input input::placeholder { color: var(--text-secondary); font-weight: 500; }
+
+/* ===== Page / tab transition animation ===== */
+@keyframes viewEnter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.view-enter { animation: viewEnter 0.32s ease both; }
+
+/* Cards/rings/tiles fade+rise in, but ONLY as part of their container's .view-enter animation
+ * (tab switches, module switches) -- not on every small re-render (typing a number, toggling a
+ * checkbox), which would otherwise replay this on every keystroke and feel jittery rather than
+ * polished. A small stagger by nth-child keeps a screen full of cards from popping in at once. */
+@keyframes cardEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.view-enter .card, .view-enter .loan-card, .view-enter .inv-card, .view-enter .macro-card,
+.view-enter .macro-tile, .view-enter .ring-item, .view-enter .day-card, .view-enter .fin-tile {
+  animation: cardEnter 0.35s ease both;
+}
+.view-enter .card:nth-of-type(2), .view-enter .loan-card:nth-of-type(2), .view-enter .fin-tile:nth-of-type(2) { animation-delay: 0.03s; }
+.view-enter .card:nth-of-type(3), .view-enter .loan-card:nth-of-type(3), .view-enter .fin-tile:nth-of-type(3) { animation-delay: 0.06s; }
+.view-enter .card:nth-of-type(4), .view-enter .loan-card:nth-of-type(4), .view-enter .fin-tile:nth-of-type(4) { animation-delay: 0.09s; }
+.view-enter .card:nth-of-type(5), .view-enter .loan-card:nth-of-type(5) { animation-delay: 0.12s; }
+
+/* Press/hover feedback: buttons and tappable chips settle with a quick scale, giving the app a
+ * more responsive, less static feel without being distracting. */
+.btn, .act-btn, .icon-btn, .fin-filter, .fin-ghost-btn, .cal-edit-btn, .btn-add-food,
+.nav-tabs button, .activity-toggle, .quick-add-btn, .chip-toggle, .ring-clickable {
+  transition: transform 0.15s ease, filter 0.15s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+.btn:active, .act-btn:active, .icon-btn:active, .fin-filter:active, .fin-ghost-btn:active,
+.cal-edit-btn:active, .btn-add-food:active, .nav-tabs button:active, .activity-toggle:active,
+.quick-add-btn:active, .chip-toggle:active, .ring-clickable:active { transform: scale(0.96); }
+
+/* Respect users who've asked their OS/browser to minimize motion. */
+@media (prefers-reduced-motion: reduce) {
+  .view-enter,
+  .view-enter .card, .view-enter .loan-card, .view-enter .inv-card, .view-enter .macro-card,
+  .view-enter .macro-tile, .view-enter .ring-item, .view-enter .day-card, .view-enter .fin-tile {
+    animation: none;
+  }
+  .btn, .act-btn, .icon-btn, .fin-filter, .fin-ghost-btn, .cal-edit-btn, .btn-add-food,
+  .nav-tabs button, .home-tile, .activity-toggle, .quick-add-btn, .chip-toggle, .ring-clickable {
+    transition: none;
+  }
+}
+.chip-toggle {
+  display: flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 15px;
+  font-size: 0.75rem; cursor: pointer; border: 1px solid var(--overlay-3);
+  background: var(--overlay-1); color: var(--text-secondary);
+}
+.chip-toggle.selected { 
+  border-color: var(--accent); 
+  background: var(--accent); 
+  color: var(--btn-text); 
+  font-weight: 600;
+}
 
 /* Meal Sections */
 .meal-section { margin: 10px 0; }
 .meal-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }
 .meal-items { margin: 5px 0; }
-.meal-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+.meal-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
 .meal-item:hover { background: var(--accent-glow); }
-.meal-item .remove-btn { background: var(--danger); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 0.7rem; }
+.meal-item .remove-btn { background: var(--danger); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 0.7rem; flex: 0 0 22px; }
+
+/* Selectable meal presentation styles. All layouts use the same meal data and handlers. */
+.meals-card { overflow: visible; }
+.meals-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.meals-heading { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.meals-heading h3 { margin: 0; }
+.meal-layout-picker { position: relative; flex: 0 0 auto; }
+.meal-layout-btn { width: 32px; height: 32px; padding: 0; border: 1px solid var(--border); border-radius: 9px; background: var(--bg-primary); color: var(--text-secondary); cursor: pointer; font-size: 1rem; }
+.meal-layout-btn:hover, .meal-layout-btn[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: var(--btn-text); }
+.meal-layout-menu { left: 0; right: auto; min-width: 245px; }
+.meal-layout-menu .dropdown-item { font-size: 0.78rem; }
+.meal-layout-menu .dropdown-item.active { background: var(--accent); color: var(--btn-text); }
+.meals-style-label { color: var(--text-secondary); font-size: 0.68rem; white-space: nowrap; }
+.meal-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 12px; }
+.meal-actions .btn { flex: 1; min-width: 130px; }
+.meal-empty { color: var(--text-secondary); font-size: 0.78rem; padding: 10px 4px; }
+.meal-food-name { min-width: 0; overflow-wrap: anywhere; }
+.meal-food-meta { color: var(--text-secondary); font-size: 0.72rem; white-space: nowrap; }
+
+/* Option 2: Lose It! Style — compact card with a meal progress ring. */
+.meal-layout-loseit .meal-section { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; }
+.meal-layout-loseit .meal-progress-ring { --meal-progress: 0%; width: 62px; height: 62px; flex: 0 0 62px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--accent) var(--meal-progress), var(--overlay-2) 0); position: relative; }
+.meal-layout-loseit .meal-progress-ring::after { content: ''; position: absolute; inset: 6px; border-radius: 50%; background: var(--bg-card); }
+.meal-layout-loseit .meal-progress-value { position: relative; z-index: 1; font-size: 0.72rem; font-weight: 800; }
+.meal-layout-loseit .meal-content { flex: 1; min-width: 0; }
+.meal-layout-loseit .meal-header { padding: 0; border: none; background: transparent; }
+.meal-layout-loseit .meal-items { margin: 7px 0 0; }
+.meal-layout-loseit .meal-item { padding: 5px 0; border-bottom: 1px solid var(--overlay-1); }
+.meal-layout-loseit .meal-item:last-child { border-bottom: none; }
+
+/* Option 3: Yazio Style — bold gradient card with prominent calories and macro tiles. */
+.meal-layout-yazio .meal-section { padding: 14px; background: linear-gradient(135deg, var(--accent-glow), var(--overlay-1)); border: 1px solid var(--border); border-radius: 15px; }
+.meal-layout-yazio .meal-header { padding: 0 0 10px; border: none; background: transparent; }
+.meal-layout-yazio .meal-calories { color: var(--accent); font-size: 1.15rem; font-weight: 800; }
+.meal-layout-yazio .meal-macro-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0 0 8px; }
+.meal-layout-yazio .meal-macro-stat { padding: 7px 4px; text-align: center; background: var(--overlay-2); border-radius: 8px; }
+.meal-layout-yazio .meal-macro-stat strong { display: block; font-size: 0.78rem; }
+.meal-layout-yazio .meal-macro-stat span { display: block; margin-top: 2px; color: var(--text-secondary); font-size: 0.58rem; text-transform: uppercase; }
+.meal-layout-yazio .meal-items { margin: 4px 0 0; }
+.meal-layout-yazio .meal-item { padding: 7px 0; border-bottom-color: var(--overlay-1); }
+
+/* Option 5: Lifesum Style — minimalist icon, item count, and clean macro row. */
+.meal-layout-lifesum .meal-section { padding: 13px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; }
+.meal-layout-lifesum .meal-header { padding: 0 0 11px; border: none; border-bottom: 1px solid var(--overlay-2); border-radius: 0; background: transparent; }
+.meal-layout-lifesum .meal-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); font-size: 1.15rem; flex: 0 0 38px; }
+.meal-layout-lifesum .meal-heading-info { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.meal-layout-lifesum .meal-heading-info > div { min-width: 0; }
+.meal-layout-lifesum .meal-item-count { color: var(--text-secondary); font-size: 0.68rem; }
+.meal-layout-lifesum .meal-calories { color: var(--accent); font-size: 1.05rem; font-weight: 800; }
+.meal-layout-lifesum .meal-macro-row { display: flex; gap: 12px; flex-wrap: wrap; padding: 9px 0 4px; color: var(--text-secondary); font-size: 0.7rem; }
+.meal-layout-lifesum .meal-macro-row b { color: var(--text-primary); }
+.meal-layout-lifesum .meal-items { margin: 3px 0 0; }
+.meal-layout-lifesum .meal-item { padding: 7px 0; border-bottom-color: var(--overlay-1); }
+
+/* Option 7: One-tap Log Bar — Fastest. */
+.meal-layout-onetap .meal-section { padding: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 13px; }
+.meal-layout-onetap .meal-header { padding: 0 0 8px; border: none; background: transparent; }
+.meal-layout-onetap .meal-item { padding: 6px 0; border-bottom-color: var(--overlay-1); }
+.meal-layout-onetap .one-tap-label { color: var(--text-secondary); font-size: 0.68rem; margin-top: 9px; }
+.meal-layout-onetap .one-tap-bar { display: flex; gap: 6px; overflow-x: auto; padding: 6px 0 2px; scrollbar-width: thin; }
+.meal-layout-onetap .one-tap-food { flex: 0 0 auto; padding: 7px 10px; border: 1px solid var(--accent); border-radius: 16px; background: var(--accent); color: var(--btn-text); font-size: 0.7rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.meal-layout-onetap .one-tap-food:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.meal-layout-onetap .one-tap-empty { color: var(--text-secondary); font-size: 0.72rem; padding: 6px 0; }
+
+@media (max-width: 520px) {
+  .meals-header { align-items: flex-start; }
+  .meals-style-label { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  .meal-layout-yazio .meal-macro-grid { gap: 4px; }
+  .meal-layout-yazio .meal-macro-stat { padding-left: 2px; padding-right: 2px; }
+  .meal-layout-loseit .meal-progress-ring { width: 54px; height: 54px; flex-basis: 54px; }
+  .meal-layout-loseit .meal-progress-ring::after { inset: 5px; }
+}
 
 /* Food Search */
 .search-box { position: relative; margin: 8px 0; }
@@ -230,90 +780,103 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 <style>
 /* Food DB Tab */
 .food-list { max-height: 400px; overflow-y: auto; }
-.food-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr auto; gap: 5px; padding: 6px 8px; font-size: 0.75rem; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
-.food-row:hover { background: rgba(255,255,255,0.05); }
-.food-row-header { font-weight: bold; color: #00d4ff; background: rgba(0,212,255,0.1); border-radius: 8px; }
+.food-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr auto; gap: 5px; padding: 6px 8px; font-size: 0.75rem; align-items: center; border-bottom: 1px solid var(--overlay-1); }
+.food-row:hover { background: var(--overlay-1); }
+.food-row-header { font-weight: bold; color: var(--accent); background: var(--accent-glow); border-radius: 8px; }
 .food-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 10px 0; }
 .food-form input, .food-form select {
-  padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
-  background: rgba(255,255,255,0.08); color: #e0e0e0; font-size: 0.8rem;
+  padding: 8px; border-radius: 8px; border: 1px solid var(--overlay-4);
+  background: var(--overlay-2); color: var(--text-primary); font-size: 0.8rem;
 }
-.food-form input:focus { outline: none; border-color: #00d4ff; }
+.food-form input:focus { outline: none; border-color: var(--accent); }
 
 /* Buttons */
 .btn { padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; }
-.btn-primary { background: #00d4ff; color: #1a1a2e; }
-.btn-primary:hover { background: #00b8d4; }
-.btn-danger { background: #e74c3c; color: white; }
-.btn-danger:hover { background: #c0392b; }
-.btn-success { background: #27ae60; color: white; }
-.btn-success:hover { background: #229954; }
+.btn-primary { background: var(--accent); color: var(--btn-text); }
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-danger { background: var(--danger); color: var(--btn-text); }
+.btn-danger:hover { filter: brightness(1.1); }
+.btn-success { background: var(--success); color: var(--btn-text); }
+.btn-success:hover { filter: brightness(1.1); }
 .btn-sm { padding: 4px 8px; font-size: 0.75rem; }
 
 /* Settings */
 .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
 .setting-item { display: flex; flex-direction: column; gap: 4px; }
-.setting-item label { font-size: 0.8rem; color: #aaa; }
+.setting-item label { font-size: 0.8rem; color: var(--text-secondary); }
 .setting-item input, .setting-item select {
-  padding: 8px; border-radius: 8px; border: 1px solid rgba(0,212,255,0.3);
-  background: rgba(15,23,42,0.8); color: #f1f5f9; appearance: none; -webkit-appearance: none;
+  padding: 8px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg-card); color: var(--text-primary); appearance: none; -webkit-appearance: none;
 }
 .setting-item select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300d4ff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 12px center;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%), linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
+  background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+  background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 28px;
 }
-.setting-item select option { background: #1e293b; color: #f1f5f9; }
-.setting-item input:focus, .setting-item select:focus { outline: none; border-color: #00d4ff; box-shadow: 0 0 6px rgba(0,212,255,0.2); }
+.setting-item select option { background: var(--bg-card); color: var(--text-primary); }
+.setting-item input:focus, .setting-item select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
 
 /* Weekly View */
 .weekly-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin: 10px 0; }
-.day-card { padding: 8px; border-radius: 8px; background: rgba(255,255,255,0.05); text-align: center; font-size: 0.75rem; }
-.day-card.today { border: 2px solid #00d4ff; }
-.day-card .day-name { font-weight: bold; color: #ffd700; margin-bottom: 3px; }
+.day-card { padding: 8px; border-radius: 8px; background: var(--overlay-1); text-align: center; font-size: 0.75rem; }
+.day-card.today { border: 2px solid var(--accent); }
+.day-card .day-name { font-weight: bold; color: var(--accent2); margin-bottom: 3px; }
 .day-card .day-cal { font-size: 1rem; font-weight: bold; }
-.surplus { color: #e74c3c; }
-.on-track { color: #27ae60; }
+.surplus { color: var(--danger); }
+.on-track { color: var(--success); }
 
 /* Toast */
-.toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 10px; color: white; font-size: 0.85rem; z-index: 9999; animation: slideIn 0.3s ease; }
-.toast.success { background: #27ae60; }
-.toast.error { background: #e74c3c; }
+.toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 10px; color: #fff; font-size: 0.85rem; z-index: 9999; animation: slideIn 0.3s ease; }
+.toast.success { background: var(--success); }
+.toast.error { background: var(--danger); }
 @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-/* Add Food Modal - Improved Colors */
+/* Add Food Modal */
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
 .modal-overlay.active { display: flex; }
-.modal { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 18px; padding: 24px; width: 92%; max-width: 420px; border: 2px solid rgba(0,212,255,0.4); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-.modal h3 { margin-bottom: 18px; color: #00d4ff; font-size: 1.2rem; }
+.modal { background: var(--bg-card); border-radius: 18px; padding: 24px; width: 92%; max-width: 420px; border: 2px solid var(--accent-glow); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.modal h3 { margin-bottom: 18px; color: var(--accent); font-size: 1.2rem; }
 .modal-form { display: flex; flex-direction: column; gap: 12px; }
-.modal-form input { padding: 12px 15px; border-radius: 10px; border: 1px solid rgba(0,212,255,0.3); background: rgba(15,23,42,0.8); color: #f1f5f9; font-size: 0.95rem; }
-.modal-form input:focus { border-color: #00d4ff; outline: none; box-shadow: 0 0 8px rgba(0,212,255,0.2); }
-.modal-form select { padding: 12px 15px; border-radius: 10px; border: 1px solid rgba(0,212,255,0.3); background: rgba(15,23,42,0.8); color: #f1f5f9; font-size: 0.95rem; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300d4ff' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
-.modal-form select:focus { border-color: #00d4ff; outline: none; box-shadow: 0 0 8px rgba(0,212,255,0.2); }
-.modal-form select option { background: #1e293b; color: #f1f5f9; padding: 10px; }
+.modal-form input { padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 0.95rem; }
+.modal-form input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 8px var(--accent-glow); }
+.modal-form select { padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 0.95rem; appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%), linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%); background-position: calc(100% - 18px) center, calc(100% - 13px) center; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 32px; }
+.modal-form select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 8px var(--accent-glow); }
+.modal-form select option { background: var(--bg-card); color: var(--text-primary); padding: 10px; }
 .modal-buttons { display: flex; gap: 12px; margin-top: 15px; }
 .modal-buttons .btn { flex: 1; padding: 12px; font-size: 1rem; }
 
 /* Large Add Food Button */
-.btn-add-food { padding: 14px 28px; font-size: 1.1rem; border-radius: 12px; background: linear-gradient(135deg, #00d4ff, #0984e3); color: #fff; font-weight: 700; box-shadow: 0 4px 15px rgba(0,212,255,0.3); margin: 10px 0; display: block; width: 100%; text-align: center; border: none; cursor: pointer; transition: all 0.3s; }
-.btn-add-food:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,212,255,0.4); }
+.btn-add-food { padding: 14px 28px; font-size: 1.1rem; border-radius: 12px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--btn-text); font-weight: 700; box-shadow: 0 4px 15px var(--accent-glow); margin: 10px 0; display: block; width: 100%; text-align: center; border: none; cursor: pointer; transition: all 0.3s; }
+.btn-add-food:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--accent-glow); }
 
 /* Quick Add Section */
 .quick-add-section { margin: 10px 0; }
 .quick-add-grid { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
-.quick-add-btn { padding: 8px 14px; border-radius: 20px; border: 1px solid rgba(0,212,255,0.3); background: rgba(0,212,255,0.1); color: #00d4ff; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-.quick-add-btn:hover { background: rgba(0,212,255,0.3); transform: scale(1.05); }
+.quick-add-btn { 
+  padding: 8px 14px; 
+  border-radius: 20px; 
+  border: 1px solid var(--accent); 
+  background: var(--accent); 
+  color: var(--btn-text); 
+  font-size: 0.8rem; 
+  font-weight: 600;
+  cursor: pointer; 
+  transition: all 0.2s; 
+  white-space: nowrap; 
+}
+.quick-add-btn:hover { filter: brightness(1.15); transform: scale(1.05); }
 
 /* Backup Reminder Banner */
-.backup-banner { background: linear-gradient(90deg, rgba(255,215,0,0.15), rgba(255,215,0,0.05)); border: 1px solid rgba(255,215,0,0.3); border-radius: 10px; padding: 10px 15px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; }
-.backup-banner span { color: #ffd700; font-size: 0.8rem; }
+.backup-banner { background: linear-gradient(90deg, var(--accent2-glow), transparent); border: 1px solid var(--accent2-glow); border-radius: 10px; padding: 10px 15px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; }
+.backup-banner span { color: var(--accent2); font-size: 0.8rem; }
 .backup-banner button { font-size: 0.75rem; }
 
 /* Import/Export */
-.import-area { width: 100%; min-height: 100px; background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.3); border-radius: 8px; padding: 10px; color: #e0e0e0; font-size: 0.8rem; resize: vertical; }
+.import-area { width: 100%; min-height: 100px; background: var(--overlay-1); border: 1px dashed var(--overlay-4); border-radius: 8px; padding: 10px; color: var(--text-primary); font-size: 0.8rem; resize: vertical; }
 
 @media (max-width: 600px) {
-  .food-row { grid-template-columns: 2fr 1fr 1fr auto; }
+  .macro-tiles { grid-template-columns: repeat(2, 1fr); }
+  .food-row { grid-template-columns: 2fr 1fr 1fr 1fr auto; }
   .food-row .hide-mobile { display: none; }
   .weekly-grid { grid-template-columns: repeat(4, 1fr); }
   .macro-grid { grid-template-columns: repeat(2, 1fr); }
@@ -337,7 +900,15 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .fin-entry { border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin: 10px 0; background: var(--bg-card); }
 .fin-entry-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
 .fin-entry-head .name { font-weight: 700; font-size: 0.95rem; }
-.fin-chip { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.7rem; background: var(--accent-glow); color: var(--accent); }
+.fin-chip { 
+  display: inline-block; 
+  padding: 3px 10px; 
+  border-radius: 12px; 
+  font-size: 0.7rem; 
+  background: var(--accent); 
+  color: var(--btn-text); 
+  font-weight: 600;
+}
 .fin-sub { display: flex; gap: 6px; align-items: flex-end; flex-wrap: wrap; margin-top: 8px; }
 .fin-sub input, .fin-sub select { padding: 7px 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 0.8rem; }
 /* ---- Hero summary ---- */
@@ -364,11 +935,26 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .fin-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin: 8px 0; }
 
 /* ---- Filter chips ---- */
-.fin-filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 2px; }
+.fin-filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 2px; align-items: center; }
 .fin-filter {
   padding: 6px 13px; border-radius: 16px; border: 1px solid var(--border); background: transparent;
   color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; cursor: pointer;
 }
+
+/* ---- Sort dropdown, sits alongside the filter chips ---- */
+.fin-sort {
+  margin-left: auto; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--bg-card); color: var(--text-primary); font-size: 0.75rem; font-weight: 600;
+  cursor: pointer;
+}
+.fin-sort:focus { outline: none; border-color: var(--accent); }
+.fin-sort-dir {
+  padding: 6px 11px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-primary); font-size: 0.85rem; font-weight: 700; cursor: pointer; line-height: 1;
+}
+.fin-sort-dir:hover { border-color: var(--accent); color: var(--accent); }
+.fin-sort-dir.disabled { opacity: 0.4; cursor: not-allowed; }
+.fin-sort-dir.disabled:hover { border-color: var(--border); color: var(--text-primary); }
 .fin-filter:hover { color: var(--text-primary); }
 .fin-filter.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
@@ -382,7 +968,7 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .loan-avatar {
   width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 0.9rem; background: var(--accent-glow); color: var(--accent);
+  font-weight: 800; font-size: 0.9rem; background: var(--accent); color: var(--btn-text);
 }
 .loan-id { flex: 1; min-width: 0; }
 .loan-name { font-weight: 700; font-size: 1rem; }
@@ -395,7 +981,7 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .loan-progress { margin: 13px 0 2px; }
 .loan-progress .p-top { display: flex; justify-content: space-between; font-size: 0.71rem; color: var(--text-secondary); margin-bottom: 4px; }
 .loan-bar { height: 7px; border-radius: 4px; background: var(--bg-primary); border: 1px solid var(--border); overflow: hidden; }
-.loan-bar > span { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #34d399, #10b981); transition: width 0.4s ease; }
+.loan-bar > span { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--cal-c), var(--cal-c-2)); transition: width 0.4s ease; }
 .loan-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .act-btn { flex: 1; min-width: 120px; border: none; border-radius: 10px; padding: 10px 12px; font-size: 0.81rem; font-weight: 700; cursor: pointer; color: #fff; }
 .act-int { background: var(--success); }
@@ -416,7 +1002,7 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 }
 .inv-input:focus { outline: none; border-color: var(--accent); }
 .alloc-bar { height: 5px; border-radius: 3px; background: var(--bg-primary); border: 1px solid var(--border); overflow: hidden; margin-top: 11px; }
-.alloc-bar > span { display: block; height: 100%; background: linear-gradient(90deg, #7c5cff, #60a5fa); }
+.alloc-bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
 
 /* ---- Empty state ---- */
 .fin-empty { text-align: center; padding: 30px 16px; border: 1px dashed var(--border); border-radius: 16px; margin: 10px 0; }
@@ -428,18 +1014,33 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .loan-stat { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
 .loan-stat .s-val { font-size: 1rem; font-weight: 800; }
 .loan-stat .s-lbl { font-size: 0.63rem; color: var(--text-secondary); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.03em; }
+
+/* ---- Status row: badge + overdue-since/next-due chip ---- */
+.status-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.overdue-chip { background: rgba(239,68,68,0.15); color: var(--danger); font-weight: 700; padding: 4px 10px; border-radius: 10px; font-size: 0.71rem; }
+.next-due-chip { background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-secondary); padding: 4px 10px; border-radius: 10px; font-size: 0.71rem; font-weight: 600; }
+
+/* ---- Monthly cycle timeline strip ---- */
+.cycle-strip { display: flex; gap: 4px; margin: 12px 0 2px; overflow-x: auto; padding-bottom: 2px; }
+.cycle-pip { flex: 0 0 auto; width: 34px; text-align: center; }
+.cycle-pip .pip-dot { width: 100%; height: 8px; border-radius: 4px; margin-bottom: 3px; }
+.cycle-pip .pip-paid { background: var(--success); }
+.cycle-pip .pip-due { background: var(--danger); }
+.cycle-pip .pip-future { background: var(--border); }
+.cycle-pip .pip-lbl { font-size: 0.56rem; color: var(--text-secondary); }
+.cycle-pip.is-next .pip-lbl { color: var(--accent); font-weight: 700; }
 .status-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
-.status-ok { background: rgba(16,185,129,0.18); color: var(--success); }
-.status-due { background: rgba(239,68,68,0.18); color: var(--danger); }
-.status-adv { background: rgba(96,165,250,0.18); color: var(--fat-c); }
+.status-ok { background: var(--success-glow); color: var(--success); }
+.status-due { background: var(--danger-glow); color: var(--danger); }
+.status-adv { background: var(--fat-glow); color: var(--fat-c); }
 .fin-toggle { cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; padding: 8px 0; font-size: 0.85rem; font-weight: 600; color: var(--accent); border-top: 1px solid var(--border); margin-top: 10px; }
 .fin-toggle .chev { transition: transform 0.2s; }
 .month-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; margin: 6px 0; flex-wrap: wrap; gap: 4px; }
 .month-row .m-title { font-weight: 700; font-size: 0.85rem; }
 .pill { display:inline-block; padding: 2px 9px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; }
-.pill-ok { background: rgba(16,185,129,0.18); color: var(--success); }
-.pill-due { background: rgba(239,68,68,0.18); color: var(--danger); }
-.pill-adv { background: rgba(96,165,250,0.18); color: var(--fat-c); }
+.pill-ok { background: var(--success-glow); color: var(--success); }
+.pill-due { background: var(--danger-glow); color: var(--danger); }
+.pill-adv { background: var(--fat-glow); color: var(--fat-c); }
 .add-pay-btn { background: transparent; border: 1px dashed var(--accent); color: var(--accent); border-radius: 8px; padding: 7px 12px; font-size: 0.8rem; cursor: pointer; font-weight: 600; }
 .add-pay-btn:hover { background: var(--accent-glow); }
 
@@ -452,6 +1053,7 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
   .loan-stats { grid-template-columns: 1fr; }
   .fin-sec-head { flex-direction: column; align-items: stretch; }
   .fin-ghost-btn { width: 100%; }
+  .fin-sort { margin-left: 0; width: 100%; order: 99; }
 }
 </style>
 
@@ -471,7 +1073,7 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
       <option value="3">🍛 Meal 4 — Dinner</option>
     </select>
     <input type="number" id="modalQty" placeholder="Quantity (g or pcs)" min="0.25" step="0.25" value="1">
-    <div id="modalFoodPreview" style="font-size:0.85rem; color:#94a3b8; padding: 8px; background: rgba(0,212,255,0.05); border-radius: 8px; min-height: 20px;"></div>
+    <div id="modalFoodPreview" style="font-size:0.85rem; color:var(--text-secondary); padding: 8px; background: var(--accent-glow); border-radius: 8px; min-height: 20px;"></div>
     <div class="modal-buttons">
       <button class="btn btn-primary" onclick="addFoodToMeal()">✅ Add to Meal</button>
       <button class="btn btn-danger" onclick="closeModal()">✕ Cancel</button>
@@ -492,7 +1094,7 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
     <input type="number" id="nfCarbs" placeholder="Carbs (g)" step="0.1" oninput="autoCalcCalories()">
     <input type="number" id="nfFat" placeholder="Fat (g)" step="0.1" oninput="autoCalcCalories()">
     <input type="number" id="nfCal" placeholder="Calories (kcal) — auto-calculated" step="1">
-    <div id="nfCalcHint" style="font-size:0.75rem;color:#94a3b8;">Calories auto-calculate: P×4 + C×4 + F×9</div>
+    <div id="nfCalcHint" style="font-size:0.75rem;color:var(--text-secondary);">Calories auto-calculate: P×4 + C×4 + F×9</div>
     <input type="number" id="nfFibre" placeholder="Fibre (g)" step="0.1">
     <div class="modal-buttons">
       <button class="btn btn-primary" onclick="saveNewFood()">💾 Save Food</button>
@@ -506,7 +1108,7 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 <div class="modal-overlay" id="directLogModal">
 <div class="modal">
   <h3>🍽️ Log Meal Directly</h3>
-  <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:12px;">Add calories & macros directly without selecting from the food database.</p>
+  <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:12px;">Add calories & macros directly without selecting from the food database.</p>
   <div class="modal-form">
     <input type="text" id="dlName" placeholder="Meal description (e.g. Restaurant lunch)">
     <select id="dlMealSelect">
@@ -519,7 +1121,7 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
     <input type="number" id="dlCarbs" placeholder="Carbs (g)" step="0.1" oninput="autoCalcDirectCal()">
     <input type="number" id="dlFat" placeholder="Fat (g)" step="0.1" oninput="autoCalcDirectCal()">
     <input type="number" id="dlCal" placeholder="Calories (kcal) — auto or manual" step="1">
-    <div id="dlCalcHint" style="font-size:0.75rem;color:#94a3b8;">Calories auto-calculate from macros, or enter manually</div>
+    <div id="dlCalcHint" style="font-size:0.75rem;color:var(--text-secondary);">Calories auto-calculate from macros, or enter manually</div>
     <div class="modal-buttons">
       <button class="btn btn-primary" onclick="saveDirectLog()">✅ Log It</button>
       <button class="btn btn-danger" onclick="closeDirectLogModal()">✕ Cancel</button>
@@ -531,112 +1133,112 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 <script>
 // ========== DEFAULT FOOD DATABASE ==========
 const DEFAULT_FOODS = [
-  {name:"Almonds",qty:100,unit:"grams",cp:false,protein:21,carbs:20,fat:49,cal:605,fibre:0},
+  {name:"Almonds",qty:100,unit:"grams",cp:false,protein:21,carbs:20,fat:49,cal:605,fibre:12.5},
   {name:"Amul Lassi",qty:1,unit:"pack",cp:true,protein:15,carbs:12,fat:2,cal:123,fibre:0},
-  {name:"Apple",qty:100,unit:"grams",cp:false,protein:0,carbs:14,fat:0,cal:56,fibre:0},
-  {name:"Ashirvad Atta",qty:100,unit:"grams",cp:false,protein:10.7,carbs:76,fat:1,cal:359,fibre:10},
-  {name:"Avocados",qty:100,unit:"grams",cp:false,protein:2,carbs:2,fat:15,cal:151,fibre:0},
-  {name:"Bajra Flour",qty:100,unit:"grams",cp:false,protein:12,carbs:68,fat:5,cal:365,fibre:0},
-  {name:"Bananas",qty:100,unit:"grams",cp:false,protein:1,carbs:23,fat:0,cal:96,fibre:0},
+  {name:"Apple",qty:100,unit:"grams",cp:false,protein:0,carbs:14,fat:0,cal:56,fibre:2.4},
+  {name:"Ashirvad Atta",qty:100,unit:"grams",cp:false,protein:10.7,carbs:76,fat:1,cal:359,fibre:11.4},
+  {name:"Avocados",qty:100,unit:"grams",cp:false,protein:2,carbs:2,fat:15,cal:151,fibre:6.7},
+  {name:"Bajra Flour",qty:100,unit:"grams",cp:false,protein:12,carbs:68,fat:5,cal:365,fibre:11.5},
+  {name:"Bananas",qty:100,unit:"grams",cp:false,protein:1,carbs:23,fat:0,cal:96,fibre:2.6},
   {name:"Basa Fish",qty:100,unit:"grams",cp:true,protein:23,carbs:0,fat:3,cal:119,fibre:0},
-  {name:"Beetroot",qty:100,unit:"grams",cp:false,protein:2,carbs:10,fat:0,cal:48,fibre:0},
-  {name:"Black Beans",qty:100,unit:"grams",cp:false,protein:21,carbs:63,fat:1,cal:345,fibre:0},
+  {name:"Beetroot",qty:100,unit:"grams",cp:false,protein:2,carbs:10,fat:0,cal:48,fibre:2.8},
+  {name:"Black Beans",qty:100,unit:"grams",cp:false,protein:21,carbs:63,fat:1,cal:345,fibre:8.7},
   {name:"Black Coffee",qty:1,unit:"pc",cp:false,protein:0,carbs:0,fat:0,cal:0,fibre:0},
-  {name:"Black Gram (Mina Pappu)",qty:100,unit:"grams",cp:false,protein:25,carbs:60,fat:2,cal:358,fibre:0},
-  {name:"Boiled Chana",qty:100,unit:"grams",cp:false,protein:9,carbs:24,fat:1,cal:141,fibre:0},
+  {name:"Black Gram (Mina Pappu)",qty:100,unit:"grams",cp:false,protein:25,carbs:60,fat:2,cal:358,fibre:18.3},
+  {name:"Boiled Chana",qty:100,unit:"grams",cp:false,protein:9,carbs:24,fat:1,cal:141,fibre:7.6},
   {name:"Boneless Chicken",qty:100,unit:"grams",cp:true,protein:27,carbs:0,fat:11,cal:207,fibre:0},
-  {name:"Broccoli",qty:100,unit:"grams",cp:false,protein:3,carbs:7,fat:0,cal:40,fibre:0},
-  {name:"Brown Bread",qty:1,unit:"pc",cp:false,protein:2,carbs:12,fat:1,cal:65,fibre:0},
+  {name:"Broccoli",qty:100,unit:"grams",cp:false,protein:3,carbs:7,fat:0,cal:40,fibre:2.6},
+  {name:"Brown Bread",qty:1,unit:"pc",cp:false,protein:2,carbs:12,fat:1,cal:65,fibre:1.9},
   {name:"Butter/Ghee",qty:100,unit:"grams",cp:false,protein:0,carbs:0,fat:80,cal:720,fibre:0},
-  {name:"Carrots",qty:100,unit:"grams",cp:false,protein:1,carbs:10,fat:0,cal:44,fibre:3},
-  {name:"Cashews",qty:100,unit:"grams",cp:false,protein:18,carbs:27,fat:44,cal:576,fibre:0},
-  {name:"Cauliflower",qty:100,unit:"grams",cp:false,protein:2,carbs:5,fat:0,cal:28,fibre:0},
-  {name:"Chana Dal",qty:100,unit:"grams",cp:false,protein:22,carbs:63,fat:4,cal:376,fibre:0},
-  {name:"Chapati",qty:100,unit:"grams",cp:false,protein:8,carbs:50,fat:3,cal:258,fibre:10},
+  {name:"Carrots",qty:100,unit:"grams",cp:false,protein:1,carbs:10,fat:0,cal:44,fibre:2.8},
+  {name:"Cashews",qty:100,unit:"grams",cp:false,protein:18,carbs:27,fat:44,cal:576,fibre:3.3},
+  {name:"Cauliflower",qty:100,unit:"grams",cp:false,protein:2,carbs:5,fat:0,cal:28,fibre:2.5},
+  {name:"Chana Dal",qty:100,unit:"grams",cp:false,protein:22,carbs:63,fat:4,cal:376,fibre:11.5},
+  {name:"Chapati",qty:100,unit:"grams",cp:false,protein:8,carbs:50,fat:3,cal:258,fibre:11.4},
   {name:"Cheese Slice",qty:1,unit:"pc",cp:true,protein:2,carbs:1,fat:5,cal:57,fibre:0},
   {name:"Chicken Breast",qty:100,unit:"grams",cp:true,protein:27,carbs:0,fat:4,cal:144,fibre:0},
-  {name:"Chicken Biryani",qty:250,unit:"grams",cp:true,protein:16,carbs:56,fat:8,cal:360,fibre:0},
+  {name:"Chicken Biryani",qty:250,unit:"grams",cp:true,protein:16,carbs:56,fat:8,cal:360,fibre:3.5},
   {name:"Chicken Liver",qty:100,unit:"grams",cp:true,protein:26,carbs:1,fat:6,cal:162,fibre:0},
   {name:"Chicken Thighs",qty:100,unit:"grams",cp:true,protein:24,carbs:0,fat:8,cal:168,fibre:0},
-  {name:"Chickpeas",qty:100,unit:"grams",cp:false,protein:19,carbs:61,fat:6,cal:374,fibre:0},
-  {name:"Coconut",qty:100,unit:"grams",cp:false,protein:3,carbs:6,fat:33,cal:333,fibre:0},
+  {name:"Chickpeas",qty:100,unit:"grams",cp:false,protein:19,carbs:61,fat:6,cal:374,fibre:7.6},
+  {name:"Coconut",qty:100,unit:"grams",cp:false,protein:3,carbs:6,fat:33,cal:333,fibre:9},
   {name:"Coconut Oil",qty:100,unit:"grams",cp:false,protein:0,carbs:0,fat:90,cal:810,fibre:0},
-  {name:"Cooked Brown Rice",qty:100,unit:"grams",cp:false,protein:2,carbs:22,fat:1,cal:105,fibre:2},
-  {name:"Cooked Chicken Curry",qty:200,unit:"grams",cp:true,protein:23,carbs:10,fat:14,cal:258,fibre:0},
-  {name:"Cooked White Rice",qty:158,unit:"grams",cp:false,protein:4,carbs:45,fat:1,cal:206,fibre:1},
-  {name:"Corn",qty:100,unit:"grams",cp:false,protein:9,carbs:74,fat:5,cal:377,fibre:0},
+  {name:"Cooked Brown Rice",qty:100,unit:"grams",cp:false,protein:2,carbs:22,fat:1,cal:105,fibre:1.8},
+  {name:"Cooked Chicken Curry",qty:200,unit:"grams",cp:true,protein:23,carbs:10,fat:14,cal:258,fibre:2},
+  {name:"Cooked White Rice",qty:158,unit:"grams",cp:false,protein:4,carbs:45,fat:1,cal:206,fibre:0.6},
+  {name:"Corn",qty:100,unit:"grams",cp:false,protein:9,carbs:74,fat:5,cal:377,fibre:2.7},
   {name:"Cow Milk",qty:100,unit:"ml",cp:true,protein:3,carbs:5,fat:3,cal:59,fibre:0},
-  {name:"Cucumber",qty:100,unit:"grams",cp:false,protein:1,carbs:4,fat:0,cal:20,fibre:1},
+  {name:"Cucumber",qty:100,unit:"grams",cp:false,protein:1,carbs:4,fat:0,cal:20,fibre:0.5},
   {name:"Curd",qty:100,unit:"grams",cp:true,protein:3,carbs:4,fat:3,cal:55,fibre:0},
-  {name:"Dark Chocolate",qty:100,unit:"grams",cp:false,protein:12,carbs:51,fat:30,cal:522,fibre:0},
+  {name:"Dark Chocolate",qty:100,unit:"grams",cp:false,protein:12,carbs:51,fat:30,cal:522,fibre:9},
   {name:"Egg Whites (Hen)",qty:1,unit:"pc",cp:true,protein:3.6,carbs:0,fat:0,cal:14,fibre:0},
   {name:"Fish Oil",qty:1,unit:"pc",cp:false,protein:0,carbs:0,fat:2,cal:16,fibre:0},
   {name:"Freedom Vegetables Oil",qty:1,unit:"grams",cp:false,protein:0,carbs:0,fat:1,cal:9,fibre:0},
-  {name:"Grapes",qty:100,unit:"grams",cp:false,protein:1,carbs:17,fat:0,cal:72,fibre:0},
-  {name:"Guava",qty:100,unit:"grams",cp:false,protein:2.6,carbs:14,fat:1,cal:75,fibre:0},
-  {name:"Ice Cream",qty:1,unit:"scoop",cp:false,protein:2,carbs:16,fat:8,cal:144,fibre:0},
-  {name:"Idli (Medium)",qty:1,unit:"pc",cp:false,protein:2,carbs:12,fat:0,cal:56,fibre:0},
+  {name:"Grapes",qty:100,unit:"grams",cp:false,protein:1,carbs:17,fat:0,cal:72,fibre:0.9},
+  {name:"Guava",qty:100,unit:"grams",cp:false,protein:2.6,carbs:14,fat:1,cal:75,fibre:5.4},
+  {name:"Ice Cream",qty:1,unit:"scoop",cp:false,protein:2,carbs:16,fat:8,cal:144,fibre:0.2},
+  {name:"Idli (Medium)",qty:1,unit:"pc",cp:false,protein:2,carbs:12,fat:0,cal:56,fibre:0.4},
   {name:"Jaggery",qty:100,unit:"grams",cp:false,protein:0,carbs:99,fat:0,cal:396,fibre:0},
-  {name:"Kidney Beans (Rajma)",qty:100,unit:"grams",cp:false,protein:24,carbs:60,fat:1,cal:345,fibre:0},
-  {name:"Kiwi",qty:100,unit:"grams",cp:false,protein:1,carbs:15,fat:1,cal:73,fibre:0},
-  {name:"Lentils",qty:100,unit:"grams",cp:false,protein:26,carbs:60,fat:1,cal:353,fibre:0},
+  {name:"Kidney Beans (Rajma)",qty:100,unit:"grams",cp:false,protein:24,carbs:60,fat:1,cal:345,fibre:15.2},
+  {name:"Kiwi",qty:100,unit:"grams",cp:false,protein:1,carbs:15,fat:1,cal:73,fibre:3},
+  {name:"Lentils",qty:100,unit:"grams",cp:false,protein:26,carbs:60,fat:1,cal:353,fibre:7.9},
   {name:"Mackerel",qty:100,unit:"grams",cp:true,protein:19,carbs:0,fat:25,cal:301,fibre:0},
-  {name:"Masoor Dal",qty:100,unit:"grams",cp:false,protein:9,carbs:26,fat:3,cal:167,fibre:0},
-  {name:"MB Biozyme Whey",qty:1,unit:"scoop",cp:true,protein:25,carbs:6,fat:2,cal:140,fibre:0},
-  {name:"Mixed Fruits",qty:100,unit:"grams",cp:false,protein:1,carbs:17,fat:0,cal:72,fibre:0},
-  {name:"Mixed Nuts",qty:100,unit:"grams",cp:false,protein:18,carbs:20,fat:54,cal:638,fibre:0},
-  {name:"Mixed Seeds",qty:38,unit:"grams",cp:false,protein:8,carbs:13,fat:13,cal:201,fibre:0},
-  {name:"Muesli",qty:100,unit:"grams",cp:false,protein:10,carbs:78,fat:5,cal:394,fibre:0},
-  {name:"Mung Beans",qty:100,unit:"grams",cp:false,protein:24,carbs:63,fat:1,cal:357,fibre:0},
-  {name:"Mushroom",qty:100,unit:"grams",cp:false,protein:3,carbs:3,fat:0,cal:24,fibre:0},
-  {name:"Mutton Curry",qty:250,unit:"grams",cp:true,protein:24,carbs:8,fat:28,cal:380,fibre:0},
-  {name:"Oats",qty:100,unit:"grams",cp:false,protein:12,carbs:66,fat:9,cal:393,fibre:0},
+  {name:"Masoor Dal",qty:100,unit:"grams",cp:false,protein:9,carbs:26,fat:3,cal:167,fibre:11.5},
+  {name:"MB Biozyme Whey",qty:1,unit:"scoop",cp:true,protein:25,carbs:6,fat:2,cal:140,fibre:0.8},
+  {name:"Mixed Fruits",qty:100,unit:"grams",cp:false,protein:1,carbs:17,fat:0,cal:72,fibre:2.5},
+  {name:"Mixed Nuts",qty:100,unit:"grams",cp:false,protein:18,carbs:20,fat:54,cal:638,fibre:6.5},
+  {name:"Mixed Seeds",qty:38,unit:"grams",cp:false,protein:8,carbs:13,fat:13,cal:201,fibre:11.4},
+  {name:"Muesli",qty:100,unit:"grams",cp:false,protein:10,carbs:78,fat:5,cal:394,fibre:8},
+  {name:"Mung Beans",qty:100,unit:"grams",cp:false,protein:24,carbs:63,fat:1,cal:357,fibre:16.3},
+  {name:"Mushroom",qty:100,unit:"grams",cp:false,protein:3,carbs:3,fat:0,cal:24,fibre:1},
+  {name:"Mutton Curry",qty:250,unit:"grams",cp:true,protein:24,carbs:8,fat:28,cal:380,fibre:2.5},
+  {name:"Oats",qty:100,unit:"grams",cp:false,protein:12,carbs:66,fat:9,cal:393,fibre:10.6},
   {name:"Olive Oil",qty:100,unit:"grams",cp:false,protein:0,carbs:0,fat:90,cal:810,fibre:0},
-  {name:"Onions",qty:100,unit:"grams",cp:false,protein:1.4,carbs:10,fat:0,cal:47,fibre:0},
-  {name:"Orange",qty:100,unit:"grams",cp:false,protein:1,carbs:12,fat:0,cal:52,fibre:0},
+  {name:"Onions",qty:100,unit:"grams",cp:false,protein:1.4,carbs:10,fat:0,cal:47,fibre:1.7},
+  {name:"Orange",qty:100,unit:"grams",cp:false,protein:1,carbs:12,fat:0,cal:52,fibre:2.4},
   {name:"Paneer",qty:100,unit:"grams",cp:true,protein:18,carbs:1,fat:25,cal:301,fibre:0},
   {name:"Paneer Homemade",qty:100,unit:"grams",cp:true,protein:22,carbs:4,fat:9,cal:185,fibre:0},
-  {name:"Papaya",qty:100,unit:"grams",cp:false,protein:1,carbs:11,fat:0,cal:48,fibre:0},
-  {name:"Pasta",qty:100,unit:"grams",cp:false,protein:13,carbs:75,fat:2,cal:370,fibre:0},
-  {name:"Peanut Butter",qty:1,unit:"scoop",cp:false,protein:4,carbs:4,fat:8,cal:104,fibre:0},
-  {name:"Peanuts",qty:100,unit:"grams",cp:false,protein:26,carbs:16,fat:49,cal:609,fibre:0},
-  {name:"Pineapple",qty:100,unit:"grams",cp:false,protein:1,carbs:13,fat:0,cal:56,fibre:0},
-  {name:"Plain Dosa",qty:1,unit:"pc",cp:false,protein:3,carbs:22,fat:1,cal:109,fibre:0},
-  {name:"Poha",qty:100,unit:"grams",cp:false,protein:8,carbs:76,fat:2,cal:354,fibre:0},
-  {name:"Pomegranate",qty:100,unit:"grams",cp:false,protein:1,carbs:18,fat:0,cal:76,fibre:0},
+  {name:"Papaya",qty:100,unit:"grams",cp:false,protein:1,carbs:11,fat:0,cal:48,fibre:1.7},
+  {name:"Pasta",qty:100,unit:"grams",cp:false,protein:13,carbs:75,fat:2,cal:370,fibre:1.8},
+  {name:"Peanut Butter",qty:1,unit:"scoop",cp:false,protein:4,carbs:4,fat:8,cal:104,fibre:2},
+  {name:"Peanuts",qty:100,unit:"grams",cp:false,protein:26,carbs:16,fat:49,cal:609,fibre:8.5},
+  {name:"Pineapple",qty:100,unit:"grams",cp:false,protein:1,carbs:13,fat:0,cal:56,fibre:1.4},
+  {name:"Plain Dosa",qty:1,unit:"pc",cp:false,protein:3,carbs:22,fat:1,cal:109,fibre:0.9},
+  {name:"Poha",qty:100,unit:"grams",cp:false,protein:8,carbs:76,fat:2,cal:354,fibre:6.7},
+  {name:"Pomegranate",qty:100,unit:"grams",cp:false,protein:1,carbs:18,fat:0,cal:76,fibre:4},
   {name:"Prawns",qty:100,unit:"grams",cp:true,protein:21,carbs:0,fat:1,cal:93,fibre:0},
-  {name:"Protein Bar",qty:1,unit:"bar",cp:true,protein:20,carbs:25,fat:9,cal:220,fibre:0},
-  {name:"Quinoa",qty:100,unit:"grams",cp:false,protein:14,carbs:64,fat:6,cal:366,fibre:0},
-  {name:"Ragi Flour",qty:100,unit:"grams",cp:false,protein:11,carbs:75,fat:2,cal:362,fibre:4},
+  {name:"Protein Bar",qty:1,unit:"bar",cp:true,protein:20,carbs:25,fat:9,cal:220,fibre:6},
+  {name:"Quinoa",qty:100,unit:"grams",cp:false,protein:14,carbs:64,fat:6,cal:366,fibre:2.8},
+  {name:"Ragi Flour",qty:100,unit:"grams",cp:false,protein:11,carbs:75,fat:2,cal:362,fibre:11.2},
   {name:"Salmon",qty:100,unit:"grams",cp:true,protein:20,carbs:0,fat:13,cal:197,fibre:0},
-  {name:"Sambar (Medium Cup)",qty:1,unit:"bowl",cp:false,protein:4,carbs:20,fat:5,cal:141,fibre:0},
-  {name:"Soy Chunks",qty:100,unit:"grams",cp:true,protein:52,carbs:33,fat:1,cal:349,fibre:0},
-  {name:"Sprouts",qty:100,unit:"grams",cp:false,protein:24,carbs:47,fat:1,cal:293,fibre:0},
-  {name:"Strawberries",qty:100,unit:"grams",cp:false,protein:1,carbs:8,fat:0,cal:36,fibre:0},
-  {name:"Sweet Potato",qty:100,unit:"grams",cp:false,protein:2,carbs:20,fat:0,cal:88,fibre:0},
-  {name:"Tofu",qty:100,unit:"grams",cp:false,protein:8,carbs:2,fat:4,cal:76,fibre:0},
-  {name:"Tomatoes",qty:100,unit:"grams",cp:false,protein:0.9,carbs:4,fat:0,cal:21,fibre:2},
+  {name:"Sambar (Medium Cup)",qty:1,unit:"bowl",cp:false,protein:4,carbs:20,fat:5,cal:141,fibre:5},
+  {name:"Soy Chunks",qty:100,unit:"grams",cp:true,protein:52,carbs:33,fat:1,cal:349,fibre:13},
+  {name:"Sprouts",qty:100,unit:"grams",cp:false,protein:24,carbs:47,fat:1,cal:293,fibre:1.8},
+  {name:"Strawberries",qty:100,unit:"grams",cp:false,protein:1,carbs:8,fat:0,cal:36,fibre:2},
+  {name:"Sweet Potato",qty:100,unit:"grams",cp:false,protein:2,carbs:20,fat:0,cal:88,fibre:3},
+  {name:"Tofu",qty:100,unit:"grams",cp:false,protein:8,carbs:2,fat:4,cal:76,fibre:0.3},
+  {name:"Tomatoes",qty:100,unit:"grams",cp:false,protein:0.9,carbs:4,fat:0,cal:21,fibre:1.2},
   {name:"Tuna",qty:100,unit:"grams",cp:true,protein:23,carbs:0,fat:5,cal:137,fibre:0},
-  {name:"Uncooked White Rice",qty:100,unit:"grams",cp:false,protein:7,carbs:80,fat:1,cal:357,fibre:0},
-  {name:"Upma (Medium Cup)",qty:1,unit:"bowl",cp:false,protein:6,carbs:46,fat:4,cal:244,fibre:0},
-  {name:"Vegetable Curry",qty:100,unit:"grams",cp:false,protein:3,carbs:12,fat:4,cal:96,fibre:0},
-  {name:"Vegetable Salad",qty:100,unit:"grams",cp:false,protein:1,carbs:10,fat:0,cal:44,fibre:0},
-  {name:"Walnuts",qty:100,unit:"grams",cp:false,protein:15,carbs:7,fat:65,cal:673,fibre:0},
-  {name:"Watermelon",qty:100,unit:"grams",cp:false,protein:1,carbs:8,fat:0,cal:36,fibre:0},
-  {name:"Whey Isolate",qty:1,unit:"scoop",cp:true,protein:27,carbs:2,fat:1,cal:118,fibre:0},
-  {name:"Whey Protein",qty:1,unit:"scoop",cp:true,protein:24,carbs:4,fat:2,cal:130,fibre:0},
-  {name:"White Bread",qty:1,unit:"slice",cp:false,protein:2,carbs:12,fat:1,cal:65,fibre:0},
-  {name:"White Potato",qty:100,unit:"grams",cp:false,protein:2,carbs:17,fat:0,cal:76,fibre:0},
+  {name:"Uncooked White Rice",qty:100,unit:"grams",cp:false,protein:7,carbs:80,fat:1,cal:357,fibre:1.3},
+  {name:"Upma (Medium Cup)",qty:1,unit:"bowl",cp:false,protein:6,carbs:46,fat:4,cal:244,fibre:5.4},
+  {name:"Vegetable Curry",qty:100,unit:"grams",cp:false,protein:3,carbs:12,fat:4,cal:96,fibre:2.7},
+  {name:"Vegetable Salad",qty:100,unit:"grams",cp:false,protein:1,carbs:10,fat:0,cal:44,fibre:2},
+  {name:"Walnuts",qty:100,unit:"grams",cp:false,protein:15,carbs:7,fat:65,cal:673,fibre:6.7},
+  {name:"Watermelon",qty:100,unit:"grams",cp:false,protein:1,carbs:8,fat:0,cal:36,fibre:0.4},
+  {name:"Whey Isolate",qty:1,unit:"scoop",cp:true,protein:27,carbs:2,fat:1,cal:118,fibre:0.5},
+  {name:"Whey Protein",qty:1,unit:"scoop",cp:true,protein:24,carbs:4,fat:2,cal:130,fibre:0.8},
+  {name:"White Bread",qty:1,unit:"slice",cp:false,protein:2,carbs:12,fat:1,cal:65,fibre:0.6},
+  {name:"White Potato",qty:100,unit:"grams",cp:false,protein:2,carbs:17,fat:0,cal:76,fibre:2.1},
   {name:"Whole Eggs (Hen)",qty:1,unit:"pc",cp:true,protein:6,carbs:1,fat:5,cal:73,fibre:0},
-  {name:"Pesarattu",qty:1,unit:"pc",cp:false,protein:5,carbs:15,fat:5,cal:125,fibre:0},
-  {name:"Puri",qty:1,unit:"pc",cp:false,protein:2.3,carbs:12,fat:10,cal:147,fibre:0},
-  {name:"Rava Dosa",qty:1,unit:"pc",cp:false,protein:4,carbs:23,fat:5,cal:153,fibre:0},
-  {name:"Red Gram (Kandi Pappu)",qty:100,unit:"grams",cp:false,protein:22,carbs:63,fat:2,cal:358,fibre:0},
+  {name:"Pesarattu",qty:1,unit:"pc",cp:false,protein:5,carbs:15,fat:5,cal:125,fibre:4},
+  {name:"Puri",qty:1,unit:"pc",cp:false,protein:2.3,carbs:12,fat:10,cal:147,fibre:1.7},
+  {name:"Rava Dosa",qty:1,unit:"pc",cp:false,protein:4,carbs:23,fat:5,cal:153,fibre:1.2},
+  {name:"Red Gram (Kandi Pappu)",qty:100,unit:"grams",cp:false,protein:22,carbs:63,fat:2,cal:358,fibre:17.1},
   {name:"Rohu",qty:100,unit:"grams",cp:true,protein:17,carbs:4,fat:1,cal:93,fibre:0},
   {name:"Shrimps",qty:100,unit:"grams",cp:true,protein:20,carbs:0,fat:1,cal:89,fibre:0},
-  {name:"Sunflower Seeds",qty:46,unit:"grams",cp:false,protein:9,carbs:7,fat:23,cal:271,fibre:0},
-  {name:"Coconut Chutney",qty:1,unit:"bowl",cp:false,protein:2,carbs:8,fat:19,cal:211,fibre:0},
-  {name:"Peanut Chutney",qty:100,unit:"grams",cp:false,protein:26,carbs:17,fat:60,cal:712,fibre:0}
+  {name:"Sunflower Seeds",qty:46,unit:"grams",cp:false,protein:9,carbs:7,fat:23,cal:271,fibre:4},
+  {name:"Coconut Chutney",qty:1,unit:"bowl",cp:false,protein:2,carbs:8,fat:19,cal:211,fibre:1},
+  {name:"Peanut Chutney",qty:100,unit:"grams",cp:false,protein:26,carbs:17,fat:60,cal:712,fibre:3.5}
 ];
 
 // ========== APP STATE ==========
@@ -659,23 +1261,126 @@ let selectedFood = null;
 // ========== INITIALIZATION ==========
 function init() {
   loadTheme();
+  loadProgressStyle();
+  loadRingMetric();
+  loadMealLayout();
   loadState();
   showHome();
 }
 
-function loadTheme() {
-  const theme = localStorage.getItem('macroTrackerTheme') || 'dark';
-  document.documentElement.setAttribute('data-theme', theme);
-  document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+// ========== THEMES ==========
+// Registry of selectable themes: id must match a [data-theme="id"] CSS block. `swatch` is the
+// theme's accent color, shown as a small dot in the picker dropdown and used to update the
+// browser chrome color (the <meta name="theme-color"> tag) when a theme is applied.
+const THEMES = [
+  { id: 'midnight', label: '🌙 Midnight', swatch: '#7c5cff' },
+  { id: 'daylight', label: '☀️ Daylight', swatch: '#7c5cff' },
+  { id: 'ignite',   label: '🔥 Ignite',   swatch: '#ff6a1a' },
+  { id: 'ocean',    label: '🌊 Ocean',    swatch: '#22d3ee' },
+  { id: 'forest',   label: '🌲 Forest',   swatch: '#34d399' },
+  { id: 'rose',     label: '🌸 Rose',     swatch: '#e0356b' }
+];
+const THEME_STORAGE_KEY = 'macroTrackerTheme';
+
+function populateThemePicker(current) {
+  const picker = document.getElementById('themePicker');
+  picker.innerHTML = THEMES.map(t =>
+    `<option value="${t.id}" ${t.id === current ? 'selected' : ''}>${t.label}</option>`
+  ).join('');
 }
 
-function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme');
-  const next = current === 'light' ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', next);
-  document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
-  localStorage.setItem('macroTrackerTheme', next);
+function loadTheme() {
+  let theme = localStorage.getItem(THEME_STORAGE_KEY) || 'midnight';
+  // Migrate the old binary dark/light values from before the theme registry existed.
+  if (theme === 'dark') theme = 'midnight';
+  if (theme === 'light') theme = 'daylight';
+  if (!THEMES.some(t => t.id === theme)) theme = 'midnight';
+  document.documentElement.setAttribute('data-theme', theme);
+  populateThemePicker(theme);
+  updateThemeColorMeta(theme);
 }
+
+function setTheme(theme) {
+  if (!THEMES.some(t => t.id === theme)) return;
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem(THEME_STORAGE_KEY, theme);
+  updateThemeColorMeta(theme);
+}
+
+// Keeps the mobile browser chrome / PWA title-bar color in sync with the active theme.
+function updateThemeColorMeta(theme) {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  const def = THEMES.find(t => t.id === theme);
+  if (meta && def) meta.setAttribute('content', def.swatch);
+}
+
+// ========== CALORIE GAUGE STYLE ==========
+// Whether the Daily tab's calorie goal is shown as a straight bar or a circular ring. Purely a
+// display preference, persisted separately from the theme choice.
+const PROGRESS_STYLES = [
+  { id: 'straight', label: '▬ Straight bar' },
+  { id: 'ring',     label: '◔ Circular ring' }
+];
+const PROGRESS_STYLE_KEY = 'macroTrackerProgressStyle';
+let progressStyle = 'straight';
+
+function populateStylePicker() {
+  const picker = document.getElementById('stylePicker');
+  if (!picker) return;
+  picker.innerHTML = PROGRESS_STYLES.map(s =>
+    `<option value="${s.id}" ${s.id === progressStyle ? 'selected' : ''}>${s.label}</option>`
+  ).join('');
+}
+
+function loadProgressStyle() {
+  const saved = localStorage.getItem(PROGRESS_STYLE_KEY);
+  progressStyle = PROGRESS_STYLES.some(s => s.id === saved) ? saved : 'straight';
+}
+
+function setProgressStyle(style) {
+  if (!PROGRESS_STYLES.some(s => s.id === style)) return;
+  progressStyle = style;
+  localStorage.setItem(PROGRESS_STYLE_KEY, style);
+  renderDaily();
+}
+
+// ========== MEAL LAYOUT STYLE ==========
+// Presentation-only preference: the same four meal arrays are rendered in different styles.
+const MEAL_LAYOUTS = [
+  { id: 'loseit', label: 'Lose It! Style' },
+  { id: 'yazio', label: 'Yazio Style' },
+  { id: 'lifesum', label: 'Lifesum Style' },
+  { id: 'onetap', label: 'One-tap Log Bar — Fastest' }
+];
+const MEAL_LAYOUT_KEY = 'macroTrackerMealLayout';
+let mealLayout = 'loseit';
+
+function loadMealLayout() {
+  const saved = localStorage.getItem(MEAL_LAYOUT_KEY);
+  mealLayout = MEAL_LAYOUTS.some(layout => layout.id === saved) ? saved : 'loseit';
+}
+
+function setMealLayout(layout) {
+  if (!MEAL_LAYOUTS.some(option => option.id === layout)) return;
+  mealLayout = layout;
+  localStorage.setItem(MEAL_LAYOUT_KEY, layout);
+  const menu = document.getElementById('mealLayoutMenu');
+  if (menu) menu.classList.remove('show');
+  renderDaily();
+}
+
+function toggleMealLayoutMenu() {
+  const menu = document.getElementById('mealLayoutMenu');
+  const button = document.getElementById('mealLayoutBtn');
+  if (!menu) return;
+  const isOpen = menu.classList.toggle('show');
+  if (button) button.setAttribute('aria-expanded', String(isOpen));
+}
+
+function getMealLayoutLabel() {
+  return (MEAL_LAYOUTS.find(option => option.id === mealLayout) || MEAL_LAYOUTS[0]).label;
+}
+
 
 function loadState() {
   try {
@@ -732,7 +1437,7 @@ function getLog(dateStr) {
   if (!state.dailyLogs[dateStr]) {
     state.dailyLogs[dateStr] = {
       meals: [[],[],[],[]],
-      activity: { gym: false, cardio: false, steps: '', weightBefore: '', weightAfter: '' }
+      activity: { gym: false, cardio: false, steps: '', weight: '' }
     };
   }
   return state.dailyLogs[dateStr];
@@ -764,10 +1469,18 @@ function showModule(mod) {
   document.getElementById('home-screen').style.display = 'none';
   document.getElementById('module-macro').style.display = mod === 'macro' ? 'block' : 'none';
   document.getElementById('module-finance').style.display = mod === 'finance' ? 'block' : 'none';
-  document.getElementById('appTitle').textContent = mod === 'macro' ? 'Macro Tracker' : 'Personal Finances';
+  document.getElementById('module-settings').style.display = mod === 'settings' ? 'block' : 'none';
+  document.getElementById('appTitle').textContent = 
+    mod === 'macro' ? 'Nutrition' : 
+    mod === 'finance' ? 'Personal Finances' : 'Settings';
   document.getElementById('homeBackBtn').style.display = 'flex';
+  animateIn(document.getElementById(
+    mod === 'macro' ? 'module-macro' : 
+    mod === 'finance' ? 'module-finance' : 'module-settings'
+  ));
   if (mod === 'macro') renderDaily();
   if (mod === 'finance') showFinTab(activeFinTab);
+  if (mod === 'settings') renderSettingsModule();
 }
 
 // Returns to the two-tile launch screen. Both modules keep their state in memory,
@@ -776,9 +1489,11 @@ function showHome() {
   activeModule = null;
   document.getElementById('module-macro').style.display = 'none';
   document.getElementById('module-finance').style.display = 'none';
+  document.getElementById('module-settings').style.display = 'none';
   document.getElementById('homeBackBtn').style.display = 'none';
   document.getElementById('appTitle').textContent = 'Tracker';
   document.getElementById('home-screen').style.display = 'grid';
+  animateIn(document.getElementById('home-screen'));
   renderHomeSummary();
 }
 
@@ -799,16 +1514,82 @@ function renderHomeSummary() {
 }
 
 function showTab(tab) {
-  const macroTabs = document.querySelectorAll('#module-macro .nav-tabs button');
+  // Hide dropdown after selection
+  const dropdown = document.getElementById('macroDropdown');
+  if (dropdown) dropdown.classList.remove('show');
+  
+  // Update dropdown items active state
+  const dropdownItems = document.querySelectorAll('#macroDropdown .dropdown-item');
+  dropdownItems.forEach(item => {
+    item.classList.toggle('active', item.getAttribute('data-tab') === tab);
+  });
+  
+  // Update current tab name display
+  const tabNames = { daily: 'Daily', weekly: 'Weekly', settings: 'Settings' };
+  const currentTabName = document.getElementById('currentTabName');
+  if (currentTabName && tabNames[tab]) {
+    currentTabName.textContent = tabNames[tab];
+  }
+  
+  // Show/hide tab content
   ['daily','weekly','settings'].forEach(t => {
     document.getElementById('tab-'+t).style.display = t===tab ? 'block' : 'none';
   });
-  macroTabs.forEach((btn,i) => {
-    btn.classList.toggle('active', ['daily','weekly','settings'][i] === tab);
-  });
+  
+  animateIn(document.getElementById('tab-'+tab));
   if (tab === 'daily') renderDaily();
   if (tab === 'weekly') renderWeekly();
   if (tab === 'settings') renderSettings();
+}
+
+// Toggle dropdown menu for Nutrition module
+function toggleMacroMenu() {
+  const dropdown = document.getElementById('macroDropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('show');
+  }
+}
+
+// Toggle dropdown menu for Personal Finances module
+function toggleFinanceMenu() {
+  const dropdown = document.getElementById('financeDropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('show');
+  }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  const macroDropdown = document.getElementById('macroDropdown');
+  const macroMenuBtn = document.getElementById('macroMenuBtn');
+  if (macroDropdown && macroMenuBtn && !macroMenuBtn.contains(e.target) && !macroDropdown.contains(e.target)) {
+    macroDropdown.classList.remove('show');
+  }
+  
+  const financeDropdown = document.getElementById('financeDropdown');
+  const financeMenuBtn = document.getElementById('financeMenuBtn');
+  if (financeDropdown && financeMenuBtn && !financeMenuBtn.contains(e.target) && !financeDropdown.contains(e.target)) {
+    financeDropdown.classList.remove('show');
+  }
+  
+  const mealLayoutMenu = document.getElementById('mealLayoutMenu');
+  const mealLayoutBtn = document.getElementById('mealLayoutBtn');
+  if (mealLayoutMenu && mealLayoutBtn && !mealLayoutBtn.contains(e.target) && !mealLayoutMenu.contains(e.target)) {
+    mealLayoutMenu.classList.remove('show');
+    mealLayoutBtn.setAttribute('aria-expanded', 'false');
+  }
+});
+
+// Plays the view-enter fade/slide animation on an element. Restarts cleanly even if the same
+// element was just animated (e.g. switching a tab back and forth quickly), by removing and
+// re-adding the class on the next frame rather than relying on the browser to restart a
+// still-applied animation.
+function animateIn(el) {
+  if (!el) return;
+  el.classList.remove('view-enter');
+  // Force a reflow so the class removal actually takes effect before we re-add it.
+  void el.offsetWidth;
+  el.classList.add('view-enter');
 }
 
 function toggleFinSection(id, chevId) {
@@ -818,19 +1599,148 @@ function toggleFinSection(id, chevId) {
   const open = el.style.display !== 'none';
   el.style.display = open ? 'none' : 'block';
   if (chev) chev.style.transform = open ? 'rotate(0deg)' : 'rotate(90deg)';
+  if (!open) animateIn(el);
 }
 
 function showFinTab(tab) {
   activeFinTab = tab;
+  
+  // Hide dropdown after selection
+  const dropdown = document.getElementById('financeDropdown');
+  if (dropdown) dropdown.classList.remove('show');
+  
+  // Update dropdown items active state
+  const dropdownItems = document.querySelectorAll('#financeDropdown .dropdown-item');
+  dropdownItems.forEach(item => {
+    item.classList.toggle('active', item.getAttribute('data-tab') === tab);
+  });
+  
+  // Update current tab name display
+  const tabNames = { lending: 'Lending', investments: 'Investments' };
+  const currentTabName = document.getElementById('currentFinTabName');
+  if (currentTabName && tabNames[tab]) {
+    currentTabName.textContent = tabNames[tab];
+  }
+  
+  // Show/hide tab content
   ['lending','investments'].forEach(t => {
     document.getElementById('fintab-'+t).style.display = t===tab ? 'block' : 'none';
   });
-  const finBtns = document.querySelectorAll('#module-finance .nav-tabs button');
-  finBtns.forEach((btn,i) => {
-    btn.classList.toggle('active', ['lending','investments'][i] === tab);
-  });
+  
+  animateIn(document.getElementById('fintab-'+tab));
   if (tab === 'lending') renderLending();
   if (tab === 'investments') renderInvestments();
+}
+
+// ========== RING METRICS (circular gauge display mode) ==========
+// Calories always gets its own fixed, always-big ring (it's the headline number). Separately,
+// protein/carbs/fat form their own group where exactly one is shown big and the other two are
+// small and clickable; clicking one promotes it and demotes whichever was big. Persisted like
+// progressStyle.
+const RING_MACROS = ['protein', 'carbs', 'fat', 'fibre'];
+const RING_METRIC_KEY = 'macroTrackerRingMetric';
+let selectedRingMetric = 'protein';
+
+function loadRingMetric() {
+  const saved = localStorage.getItem(RING_METRIC_KEY);
+  selectedRingMetric = RING_MACROS.includes(saved) ? saved : 'protein';
+}
+
+function setRingMetric(metric) {
+  if (!RING_MACROS.includes(metric)) return;
+  selectedRingMetric = metric;
+  localStorage.setItem(RING_METRIC_KEY, metric);
+  renderDaily();
+}
+
+// Builds a single SVG progress ring. `cfg`:
+//   value, target: raw numbers for the center label ("X left"/"X over")
+//   pct: percentage to draw (may exceed 100; the ring itself is visually capped at 100%)
+//   unit: e.g. 'cal' or 'g', appended to the center's left/over label
+//   colorVar: CSS variable name (without var()) used for the ring's fill stroke
+//   label: shown under the percentage, e.g. "Calories"
+//   size: 'big' or 'small' -- controls ring diameter/stroke and how much text is shown
+//   metric: one of RING_MACROS, used for the click handler and to mark the active ring.
+//     Omit (or leave undefined) for a fixed, non-clickable ring like the calorie ring.
+function renderRing(cfg) {
+  const isBig = cfg.size === 'big';
+  const isMedium = cfg.size === 'medium';
+  const showCenterText = isBig || isMedium;
+  const clickable = !!cfg.metric;
+  const radius = isBig ? 76 : isMedium ? 58 : 40;
+  const stroke = isBig ? 12 : isMedium ? 10 : 7;
+  const r = radius - stroke / 2;
+  const circumference = 2 * Math.PI * r;
+  const clamped = Math.max(Math.min(cfg.pct, 100), 0);
+  const offset = circumference * (1 - clamped / 100);
+  const over = cfg.pct > 100;
+  const remaining = cfg.target - cfg.value;
+  const fillColor = over ? 'var(--danger)' : `var(--${cfg.colorVar})`;
+  
+  // Round all values to whole numbers
+  const valueRounded = Math.round(cfg.value);
+  const targetRounded = Math.round(cfg.target);
+  const remainingRounded = Math.round(remaining);
+  
+  // Enhanced center label with consumed amount (rounded, no decimals)
+  const centerLabel = showCenterText
+    ? (remaining >= 0
+        ? `${cfg.label}<br><span style="font-size:0.9em;opacity:0.85;">${valueRounded}${cfg.unit} / ${targetRounded}${cfg.unit}</span><br>${remainingRounded} ${cfg.unit} left`
+        : `${cfg.label}<br><span style="font-size:0.9em;opacity:0.85;">${valueRounded}${cfg.unit} / ${targetRounded}${cfg.unit}</span><br>${Math.abs(remainingRounded)} ${cfg.unit} over`)
+    : cfg.label;
+  
+  const activeClass = clickable && selectedRingMetric === cfg.metric ? 'is-active' : '';
+  const clickAttrs = clickable
+    ? `onclick="setRingMetric('${cfg.metric}')" title="Show ${cfg.label} as the main ring"`
+    : '';
+  const sizeClass = isBig ? 'ring-big' : isMedium ? 'ring-medium' : 'ring-small';
+  return `
+        <div class="ring-item ${sizeClass} ${clickable ? 'ring-clickable' : ''} ${activeClass}" ${clickAttrs}>
+          <div class="ring-shape" style="width:${radius * 2}px;height:${radius * 2}px;">
+            <svg viewBox="0 0 ${radius * 2} ${radius * 2}">
+              <circle class="ring-track" cx="${radius}" cy="${radius}" r="${r}" stroke-width="${stroke}"></circle>
+              <circle class="ring-fill" cx="${radius}" cy="${radius}" r="${r}" stroke-width="${stroke}"
+                style="stroke:${fillColor};"
+                stroke-dasharray="${circumference.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"></circle>
+            </svg>
+            <div class="ring-center">
+              <div class="r-pct">${Math.round(clamped)}%</div>
+              <div class="r-lbl">${centerLabel}</div>
+            </div>
+          </div>
+          ${showCenterText ? '' : `<div class="ring-small-name">${cfg.label}</div>`}
+        </div>`;
+}
+
+// Renders the full ring display: calories always as its own fixed, always-big ring (it's the
+// headline number, not part of the swap group), followed by a separate protein/carbs/fat group
+// where the selected macro is big and the other two are small and clickable to swap.
+function renderRingGroup(totals, t, calPct, proPct) {
+  const carbPct = t.dailyCal > 0 ? (totals.carbs * 4 / t.dailyCal * 100) : 0;
+  const fatPct = t.dailyCal > 0 ? (totals.fat * 9 / t.dailyCal * 100) : 0;
+  const fibrePct = (totals.fibre / 30) * 100; // 30g is the general recommended daily intake
+  const calorieCfg = { value: totals.cal, target: t.dailyCal, pct: calPct, unit: 'cal', colorVar: 'cal-c', label: 'Calories' };
+  const macroCfgs = {
+    protein: { metric: 'protein', value: totals.protein, target: t.protein, pct: proPct, unit: 'g', colorVar: 'protein-c', label: 'Protein' },
+    carbs:   { metric: 'carbs',   value: totals.carbs, target: t.dailyCal > 0 ? t.dailyCal / 4 : 0, pct: carbPct, unit: 'g', colorVar: 'carbs-c', label: 'Carbs' },
+    fat:     { metric: 'fat',     value: totals.fat, target: t.dailyCal > 0 ? t.dailyCal / 9 : 0, pct: fatPct, unit: 'g', colorVar: 'fat-c', label: 'Fat' },
+    fibre:   { metric: 'fibre',   value: totals.fibre, target: 30, pct: fibrePct, unit: 'g', colorVar: 'text-secondary', label: 'Fibre' }
+  };
+  const bigMacro = macroCfgs[selectedRingMetric] || macroCfgs.protein;
+  const smallMacros = RING_MACROS.filter(m => m !== bigMacro.metric).map(m => macroCfgs[m]);
+
+  return `
+      <div class="ring-side-by-side">
+        <div class="ring-group ring-group-calories">
+          ${renderRing({ ...calorieCfg, size: 'big' })}
+        </div>
+        <div class="ring-group ring-group-macros">
+          ${renderRing({ ...bigMacro, size: 'medium' })}
+          <div class="ring-small-row">
+            ${smallMacros.map(cfg => renderRing({ ...cfg, size: 'small' })).join('')}
+          </div>
+        </div>
+      </div>`;
 }
 
 // ========== DAILY TAB ==========
@@ -855,54 +1765,94 @@ function renderDaily() {
     <div class="card">
       <h3>🏋️ Activity Tracker</h3>
       <div class="activity-row">
-        <div class="checkbox-group">
+        <label class="activity-toggle ${log.activity.gym ? 'checked' : ''}">
           <input type="checkbox" id="gymCheck" ${log.activity.gym ? 'checked' : ''} onchange="updateActivity('gym', this.checked)">
-          <label for="gymCheck">💪 Weight Training</label>
-        </div>
-        <div class="checkbox-group">
+          💪 Weight Training
+        </label>
+        <label class="activity-toggle ${log.activity.cardio ? 'checked' : ''}">
           <input type="checkbox" id="cardioCheck" ${log.activity.cardio ? 'checked' : ''} onchange="updateActivity('cardio', this.checked)">
-          <label for="cardioCheck">🏃 Cardio</label>
+          🏃 Cardio
+        </label>
+        <div class="stat-input">
+          <span class="stat-icon">👟</span>
+          <div class="stat-fields">
+            <span class="stat-lbl">Steps</span>
+            <input type="number" placeholder="0" value="${log.activity.steps}" onchange="updateActivity('steps', this.value)">
+          </div>
         </div>
-        <div>
-          <input class="input-sm" type="number" placeholder="Steps" value="${log.activity.steps}" onchange="updateActivity('steps', this.value)">
-        </div>
-        <div>
-          <input class="input-sm" type="number" step="0.1" placeholder="BW Before" value="${log.activity.weightBefore}" onchange="updateActivity('weightBefore', this.value)">
-        </div>
-        <div>
-          <input class="input-sm" type="number" step="0.1" placeholder="BW After" value="${log.activity.weightAfter}" onchange="updateActivity('weightAfter', this.value)">
+        <div class="stat-input">
+          <span class="stat-icon">⚖️</span>
+          <div class="stat-fields">
+            <span class="stat-lbl">Weight (kg)</span>
+            <input type="number" step="0.1" placeholder="0.0" value="${log.activity.weight !== undefined && log.activity.weight !== '' ? log.activity.weight : (log.activity.weightBefore || '')}" onchange="updateActivity('weight', this.value)">
+          </div>
         </div>
       </div>
       ${log.activity.gym ? `<div style="margin-top:10px;">
-        <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:6px;">Muscle groups trained:</div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:6px;">Muscle groups trained:</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           ${['Biceps','Back','Chest','Triceps','Legs','Shoulders','Core & Waist'].map(part => 
-            `<label style="display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:15px;font-size:0.75rem;cursor:pointer;border:1px solid ${(log.activity.bodyParts||[]).includes(part)?'#00d4ff':'rgba(255,255,255,0.15)'};background:${(log.activity.bodyParts||[]).includes(part)?'rgba(0,212,255,0.2)':'rgba(255,255,255,0.05)'};color:${(log.activity.bodyParts||[]).includes(part)?'#00d4ff':'#aaa'}">
+            `<label class="chip-toggle ${(log.activity.bodyParts||[]).includes(part)?'selected':''}">
               <input type="checkbox" style="display:none" ${(log.activity.bodyParts||[]).includes(part)?'checked':''} onchange="toggleBodyPart('${part}')">
               ${part}
             </label>`
           ).join('')}
         </div>
       </div>` : ''}
+      ${log.activity.cardio ? `<div style="margin-top:10px;">
+        <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:6px;">Cardio duration:</div>
+        <div class="stat-input" style="max-width:200px;">
+          <span class="stat-icon">⏱️</span>
+          <div class="stat-fields">
+            <span class="stat-lbl">Minutes</span>
+            <input type="number" placeholder="0" value="${log.activity.cardioDuration || ''}" onchange="updateActivity('cardioDuration', this.value)">
+          </div>
+        </div>
+      </div>` : ''}
     </div>
 
-    <!-- Macro Summary -->
-    <div class="card">
-      <h3>📊 Daily Summary</h3>
-      <div class="macro-grid">
-        <div class="macro-card calories"><div class="value" style="color:#00d4ff">${totals.cal}</div><div class="label">Calories<br>${t.dailyCal - totals.cal >= 0 ? (t.dailyCal - totals.cal) + ' left' : Math.abs(t.dailyCal - totals.cal) + ' over'}</div></div>
-        <div class="macro-card protein"><div class="value" style="color:#ff6b6b">${totals.protein.toFixed(1)}g</div><div class="label">Protein<br>${t.protein - totals.protein >= 0 ? (t.protein - totals.protein).toFixed(0) + 'g left' : Math.abs(t.protein - totals.protein).toFixed(0) + 'g over'}</div></div>
-        <div class="macro-card carbs"><div class="value" style="color:#ffd700">${totals.carbs.toFixed(1)}g</div><div class="label">Carbs</div></div>
-        <div class="macro-card fat"><div class="value" style="color:#a29bfe">${totals.fat.toFixed(1)}g</div><div class="label">Fat</div></div>
+    <!-- Calorie Goal hero -->
+    <div class="cal-hero ${progressStyle === 'ring' ? 'style-ring' : ''}">
+      <div class="cal-hero-top">
+        <div class="cal-hero-icon">🔥</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="icon-btn" onclick="showModule('settings')" title="Edit Targets" style="font-size:0.9rem;padding:0;width:34px;height:34px;">✎</button>
+          <select class="style-picker" id="stylePicker" title="Gauge style" onchange="setProgressStyle(this.value)"></select>
+        </div>
       </div>
-      <div class="progress-container">
-        <div class="progress-label"><span>Calories (${calPct}%)</span><span>${totals.cal} / ${t.dailyCal} kcal</span></div>
-        <div class="progress-bar"><div class="progress-fill cal-color" style="width:${Math.min(calPct,100)}%;${calPct>100?'background:linear-gradient(90deg,#e74c3c,#c0392b)':''}"></div></div>
+
+      ${progressStyle === 'ring' ? renderRingGroup(totals, t, calPct, proPct) : `
+      <div class="cal-hero-num ${totals.cal > t.dailyCal ? 'over' : ''}">${totals.cal.toLocaleString()}cal</div>
+      <div class="cal-hero-sub">${t.dailyCal - totals.cal >= 0 ? `${(t.dailyCal - totals.cal).toLocaleString()}cal left for today.` : `${Math.abs(t.dailyCal - totals.cal).toLocaleString()}cal over today's goal.`}</div>
+
+      <div class="cal-gauge">
+        <div class="cal-gauge-fill ${calPct > 100 ? 'over' : ''}" style="width:${Math.min(calPct,100)}%;">
+          <div class="cal-gauge-dot"></div>
+        </div>
       </div>
-      <div class="progress-container">
-        <div class="progress-label"><span>Protein (${proPct}%)</span><span>${totals.protein.toFixed(1)} / ${t.protein}g</span></div>
-        <div class="progress-bar"><div class="progress-fill protein-color" style="width:${Math.min(proPct,100)}%;${proPct>100?'background:linear-gradient(90deg,#e74c3c,#c0392b)':''}"></div></div>
-      </div>
+
+      <div class="macro-tiles">
+        <div class="macro-tile">
+          <div class="m-val" style="color:var(--protein-c)">${totals.protein.toFixed(0)}g</div>
+          <div class="m-lbl">Protein</div>
+          <div class="m-bar"><span style="width:${Math.min(proPct,100)}%;background:var(--protein-c);"></span></div>
+        </div>
+        <div class="macro-tile">
+          <div class="m-val" style="color:var(--carbs-c)">${totals.carbs.toFixed(0)}g</div>
+          <div class="m-lbl">Carbs</div>
+          <div class="m-bar"><span style="width:${t.dailyCal > 0 ? Math.min(totals.carbs * 4 / t.dailyCal * 100, 100) : 0}%;background:var(--carbs-c);"></span></div>
+        </div>
+        <div class="macro-tile">
+          <div class="m-val" style="color:var(--fat-c)">${totals.fat.toFixed(0)}g</div>
+          <div class="m-lbl">Fat</div>
+          <div class="m-bar"><span style="width:${t.dailyCal > 0 ? Math.min(totals.fat * 9 / t.dailyCal * 100, 100) : 0}%;background:var(--fat-c);"></span></div>
+        </div>
+        <div class="macro-tile">
+          <div class="m-val" style="color:var(--text-secondary)">${totals.fibre.toFixed(1)}g</div>
+          <div class="m-lbl">Fibre</div>
+          <div class="m-bar"><span style="width:${Math.min((totals.fibre / 30) * 100, 100)}%;background:var(--text-secondary);"></span></div>
+        </div>
+      </div>`}
     </div>
   `;
 
@@ -913,29 +1863,169 @@ function renderDaily() {
   html += renderQuickAdd();
 
   // Meals
-  html += `<div class="card"><h3>🍽️ Meals</h3>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <button class="btn-add-food" style="flex:1;min-width:150px;" onclick="openAddFoodModal()">➕ Add Meal</button>
-      <button class="btn-add-food" style="flex:1;min-width:150px;background:linear-gradient(135deg,#ffd700,#f0932b);" onclick="openDirectLogModal()">✏️ Log Directly</button>
-    </div>`;
-  for (let m = 0; m < 4; m++) {
-    const mealTotals = calcMealTotals(log.meals[m]);
-    html += `<div class="meal-section">
-      <div class="meal-header"><span>Meal ${m+1}</span><span style="font-size:0.75rem;color:#aaa">${mealTotals.cal} kcal | P:${mealTotals.protein.toFixed(1)}g | C:${mealTotals.carbs.toFixed(1)}g | F:${mealTotals.fat.toFixed(1)}g</span></div>
-      <div class="meal-items">`;
-    log.meals[m].forEach((item, idx) => {
-      html += `<div class="meal-item">
-        <span>${item.name} (${item.qty} ${item.unit})</span>
-        <span style="color:#aaa">${item.cal} kcal | P:${item.protein.toFixed(1)}g</span>
-        <button class="remove-btn" onclick="removeFood(${m},${idx})">✕</button>
-      </div>`;
-    });
-    if (log.meals[m].length === 0) html += `<div class="meal-item" style="color:#555">No items logged</div>`;
-    html += `</div></div>`;
-  }
-  html += `</div>`;
+  html += renderMealsSection(log);
 
   document.getElementById('tab-daily').innerHTML = html;
+  populateStylePicker();
+}
+
+const MEAL_NAMES = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
+const MEAL_ICONS = ['🍳', '🥗', '🍌', '🍛'];
+
+function formatMealNumber(value, decimals = 0) {
+  const number = Number(value) || 0;
+  return decimals > 0 ? number.toFixed(decimals) : Math.round(number).toString();
+}
+
+function renderMealLayoutPicker() {
+  return `<div class="meal-layout-picker">
+    <button class="meal-layout-btn" id="mealLayoutBtn" onclick="toggleMealLayoutMenu()" title="Choose meal layout" aria-label="Choose meal layout" aria-expanded="false">☰</button>
+    <div class="dropdown-menu meal-layout-menu" id="mealLayoutMenu">
+      ${MEAL_LAYOUTS.map(option => `<button class="dropdown-item ${option.id === mealLayout ? 'active' : ''}" onclick="setMealLayout('${option.id}')">
+        <span>${option.id === 'loseit' ? '◉' : option.id === 'yazio' ? '◈' : option.id === 'lifesum' ? '●' : '⚡'}</span>
+        <span>${escapeHtml(option.label)}</span>
+      </button>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderMealItems(meal, mealIdx) {
+  if (!meal || meal.length === 0) {
+    return `<div class="meal-empty">No items logged</div>`;
+  }
+  return meal.map((item, itemIdx) => `<div class="meal-item">
+    <span class="meal-food-name">${escapeHtml(item.name)} <span class="meal-food-meta">(${escapeHtml(item.qty)} ${escapeHtml(item.unit)})</span></span>
+    <span class="meal-food-meta">${formatMealNumber(item.cal)} kcal · P:${formatMealNumber(item.protein)}g</span>
+    <button class="remove-btn" onclick="removeFood(${mealIdx},${itemIdx})" title="Remove ${escapeHtml(item.name)}" aria-label="Remove ${escapeHtml(item.name)}">✕</button>
+  </div>`).join('');
+}
+
+function renderMealActions(mealIdx) {
+  return `<div class="meal-actions">
+    <button class="btn btn-primary btn-sm" onclick="openAddFoodForMeal(${mealIdx})">＋ Add food</button>
+    <button class="btn btn-sm" style="background:var(--accent2);color:var(--btn-text);" onclick="openDirectLogForMeal(${mealIdx})">✎ Log directly</button>
+  </div>`;
+}
+
+function renderMealMacroTiles(totals) {
+  return `<div class="meal-macro-grid">
+    <div class="meal-macro-stat"><strong style="color:var(--protein-c)">${formatMealNumber(totals.protein)}g</strong><span>Protein</span></div>
+    <div class="meal-macro-stat"><strong style="color:var(--carbs-c)">${formatMealNumber(totals.carbs)}g</strong><span>Carbs</span></div>
+    <div class="meal-macro-stat"><strong style="color:var(--fat-c)">${formatMealNumber(totals.fat)}g</strong><span>Fat</span></div>
+    <div class="meal-macro-stat"><strong style="color:var(--text-secondary)">${formatMealNumber(totals.fibre)}g</strong><span>Fibre</span></div>
+  </div>`;
+}
+
+function renderLoseItMeals(log) {
+  const perMealTarget = state.targets.dailyCal > 0 ? state.targets.dailyCal / 4 : 0;
+  return `<div class="meal-layout meal-layout-loseit">${log.meals.map((meal, mealIdx) => {
+    const totals = calcMealTotals(meal);
+    const progress = perMealTarget > 0 ? Math.min(Math.round(totals.cal / perMealTarget * 100), 100) : 0;
+    return `<div class="meal-section">
+      <div class="meal-progress-ring" style="--meal-progress:${progress}%" title="${progress}% of suggested meal calories"><span class="meal-progress-value">${progress}%</span></div>
+      <div class="meal-content">
+        <div class="meal-header"><span><strong>${MEAL_ICONS[mealIdx]} ${MEAL_NAMES[mealIdx]}</strong><br><span class="meal-food-meta">${meal.length} ${meal.length === 1 ? 'item' : 'items'}</span></span><span class="meal-food-meta">${formatMealNumber(totals.cal)} kcal</span></div>
+        <div class="meal-items">${renderMealItems(meal, mealIdx)}</div>
+        <div class="macroline"><span>P: <b>${formatMealNumber(totals.protein)}g</b></span><span>C: <b>${formatMealNumber(totals.carbs)}g</b></span><span>F: <b>${formatMealNumber(totals.fat)}g</b></span><span>Fib: <b>${formatMealNumber(totals.fibre)}g</b></span></div>
+        ${renderMealActions(mealIdx)}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderYazioMeals(log) {
+  return `<div class="meal-layout meal-layout-yazio">${log.meals.map((meal, mealIdx) => {
+    const totals = calcMealTotals(meal);
+    return `<div class="meal-section">
+      <div class="meal-header"><span><strong>${MEAL_ICONS[mealIdx]} ${MEAL_NAMES[mealIdx]}</strong></span><span class="meal-calories">${formatMealNumber(totals.cal)} kcal</span></div>
+      ${renderMealMacroTiles(totals)}
+      <div class="meal-items">${renderMealItems(meal, mealIdx)}</div>
+      ${renderMealActions(mealIdx)}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderLifesumMeals(log) {
+  return `<div class="meal-layout meal-layout-lifesum">${log.meals.map((meal, mealIdx) => {
+    const totals = calcMealTotals(meal);
+    return `<div class="meal-section">
+      <div class="meal-header">
+        <div class="meal-heading-info"><span class="meal-icon">${MEAL_ICONS[mealIdx]}</span><div><strong>${MEAL_NAMES[mealIdx]}</strong><div class="meal-item-count">${meal.length ? `${meal.length} ${meal.length === 1 ? 'item' : 'items'} logged` : 'No items yet'}</div></div></div>
+        <span class="meal-calories">${formatMealNumber(totals.cal)}</span>
+      </div>
+      <div class="meal-macro-row"><span>💪 <b>${formatMealNumber(totals.protein)}g</b></span><span>🍞 <b>${formatMealNumber(totals.carbs)}g</b></span><span>🥑 <b>${formatMealNumber(totals.fat)}g</b></span><span>🌾 <b>${formatMealNumber(totals.fibre)}g</b></span></div>
+      <div class="meal-items">${renderMealItems(meal, mealIdx)}</div>
+      ${renderMealActions(mealIdx)}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderOneTapMeals(log) {
+  const quickFoods = getQuickAddFoods();
+  return `<div class="meal-layout meal-layout-onetap">${log.meals.map((meal, mealIdx) => {
+    const totals = calcMealTotals(meal);
+    const quickButtons = quickFoods.slice(0, 6).map(food => {
+      const foodIndex = state.foodDB.indexOf(food);
+      return foodIndex >= 0 ? `<button class="one-tap-food" onclick="oneTapAddFood(${foodIndex},${mealIdx})">＋ ${escapeHtml(food.name)}</button>` : '';
+    }).join('');
+    return `<div class="meal-section">
+      <div class="meal-header"><span><strong>${MEAL_ICONS[mealIdx]} ${MEAL_NAMES[mealIdx]}</strong></span><span class="meal-food-meta">${formatMealNumber(totals.cal)} kcal</span></div>
+      <div class="meal-items">${renderMealItems(meal, mealIdx)}</div>
+      <div class="one-tap-label">⚡ One-tap foods · adds one database serving</div>
+      <div class="one-tap-bar">${quickButtons || '<span class="one-tap-empty">Log foods once to make them available here.</span>'}</div>
+      ${renderMealActions(mealIdx)}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderMealsSection(log) {
+  const renderers = {
+    loseit: renderLoseItMeals,
+    yazio: renderYazioMeals,
+    lifesum: renderLifesumMeals,
+    onetap: renderOneTapMeals
+  };
+  const content = (renderers[mealLayout] || renderLoseItMeals)(log);
+  return `<div class="card meals-card">
+    <div class="meals-header">
+      <div class="meals-heading">${renderMealLayoutPicker()}<h3>🍽️ Meals</h3></div>
+      <span class="meals-style-label">${escapeHtml(getMealLayoutLabel())}</span>
+    </div>
+    ${content}
+  </div>`;
+}
+
+function openAddFoodForMeal(mealIdx) {
+  openAddFoodModal();
+  const select = document.getElementById('modalMealSelect');
+  if (select) select.value = String(mealIdx);
+}
+
+function openDirectLogForMeal(mealIdx) {
+  openDirectLogModal();
+  const select = document.getElementById('dlMealSelect');
+  if (select) select.value = String(mealIdx);
+}
+
+function oneTapAddFood(foodIndex, mealIdx) {
+  const food = state.foodDB[foodIndex];
+  if (!food) return;
+  const entry = {
+    name: food.name,
+    qty: food.qty,
+    unit: food.unit,
+    protein: Math.round(Number(food.protein || 0) * 10) / 10,
+    carbs: Math.round(Number(food.carbs || 0) * 10) / 10,
+    fat: Math.round(Number(food.fat || 0) * 10) / 10,
+    cal: Math.round(Number(food.cal || 0)),
+    fibre: Math.round(Number(food.fibre || 0) * 10) / 10
+  };
+  const log = getLog(state.currentDate);
+  log.meals[mealIdx].push(entry);
+  unhideQuickAdd(entry.name);
+  saveState();
+  renderDaily();
+  showToast(`Added ${entry.name} to ${MEAL_NAMES[mealIdx]}`);
 }
 
 function updateActivity(field, value) {
@@ -944,8 +2034,11 @@ function updateActivity(field, value) {
   if (field === 'gym' && !value) {
     log.activity.bodyParts = [];
   }
+  if (field === 'cardio' && !value) {
+    log.activity.cardioDuration = '';
+  }
   saveState();
-  if (field === 'gym') renderDaily();
+  if (field === 'gym' || field === 'cardio') renderDaily();
 }
 
 function toggleBodyPart(part) {
@@ -1071,14 +2164,14 @@ function renderWeekly() {
   sunday.setDate(monday.getDate() + 6);
 
   let weekDays = [];
-  let totalCal = 0, loggedDays = 0, totalWeight = 0, weightDays = 0, gymDays = 0, cardioDays = 0, totalSteps = 0;
+  let totalCal = 0, loggedDays = 0, totalWeight = 0, weightDays = 0, gymDays = 0, cardioDays = 0, totalSteps = 0, totalCardioMinutes = 0;
 
   for (let i = 0; i < 7; i++) {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
     const dateStr = date.toISOString().split('T')[0];
     const log = state.dailyLogs[dateStr];
-    let dayCal = 0, gym = false, cardio = false, weight = '', bodyParts = [], steps = '';
+    let dayCal = 0, gym = false, cardio = false, weight = '', bodyParts = [], steps = '', cardioDuration = '';
     if (log) {
       const totals = calcDayTotals(log);
       dayCal = totals.cal;
@@ -1086,21 +2179,33 @@ function renderWeekly() {
       if (log.activity) {
         gym = log.activity.gym || false;
         cardio = log.activity.cardio || false;
-        weight = log.activity.weightBefore || '';
+        weight = log.activity.weight || log.activity.weightBefore || '';
         bodyParts = log.activity.bodyParts || [];
         steps = log.activity.steps || '';
+        cardioDuration = log.activity.cardioDuration || '';
         if (gym) gymDays++;
         if (cardio) cardioDays++;
+        if (cardioDuration) totalCardioMinutes += parseInt(cardioDuration) || 0;
         if (steps) totalSteps += parseInt(steps) || 0;
         if (weight) { totalWeight += parseFloat(weight); weightDays++; }
       }
     }
-    weekDays.push({ dateStr, dayCal, gym, cardio, weight, bodyParts, steps, isToday: dateStr === new Date().toISOString().split('T')[0], dayName: getDayName(dateStr).substring(0,3), date: date.getDate() });
+    weekDays.push({ dateStr, dayCal, gym, cardio, weight, bodyParts, steps, cardioDuration, isToday: dateStr === new Date().toISOString().split('T')[0], dayName: getDayName(dateStr).substring(0,3), date: date.getDate() });
   }
 
   const avgCal = loggedDays > 0 ? Math.round(totalCal / loggedDays) : 0;
   const avgWeight = weightDays > 0 ? (totalWeight / weightDays).toFixed(1) : 'N/A';
   const remaining = state.targets.weeklyCal - totalCal;
+  
+  // Format cardio duration
+  const formatCardioDuration = (minutes) => {
+    if (!minutes) return '';
+    if (minutes < 60) return `${minutes}min`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
+  };
+  const cardioDisplay = totalCardioMinutes > 0 ? ` (${formatCardioDuration(totalCardioMinutes)})` : '';
 
   // Week navigation
   const weekStart = `${monday.getDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][monday.getMonth()]}`;
@@ -1118,13 +2223,13 @@ function renderWeekly() {
   html += `<div class="card">
     <h2>📊 Weekly Summary</h2>
     <div class="macro-grid">
-      <div class="macro-card calories"><div class="value" style="color:#00d4ff">${totalCal}</div><div class="label">Total kcal</div></div>
-      <div class="macro-card"><div class="value" style="color:${remaining >= 0 ? '#27ae60' : '#e74c3c'}">${remaining >= 0 ? remaining : '+' + Math.abs(remaining)}</div><div class="label">${remaining >= 0 ? 'Remaining' : 'Over target'}</div></div>
-      <div class="macro-card"><div class="value" style="color:#ffd700">${avgCal}</div><div class="label">Daily Avg kcal</div></div>
-      <div class="macro-card"><div class="value" style="color:#a29bfe">${avgWeight}</div><div class="label">Avg Weight (kg)</div></div>
-      <div class="macro-card"><div class="value" style="color:#ff6b6b">${gymDays}</div><div class="label">💪 Gym Days</div></div>
-      <div class="macro-card"><div class="value" style="color:#27ae60">${cardioDays}</div><div class="label">🏃 Cardio Days</div></div>
-      <div class="macro-card"><div class="value" style="color:#ffd700">${totalSteps.toLocaleString()}</div><div class="label">👟 Total Steps</div></div>
+      <div class="macro-card calories"><div class="value" style="color:var(--cal-c)">${totalCal}</div><div class="label">Total kcal</div></div>
+      <div class="macro-card"><div class="value" style="color:${remaining >= 0 ? 'var(--success)' : 'var(--danger)'}">${remaining >= 0 ? remaining : '+' + Math.abs(remaining)}</div><div class="label">${remaining >= 0 ? 'Remaining' : 'Over target'}</div></div>
+      <div class="macro-card"><div class="value" style="color:var(--accent2)">${avgCal}</div><div class="label">Daily Avg kcal</div></div>
+      <div class="macro-card"><div class="value" style="color:var(--fat-c)">${avgWeight}</div><div class="label">Avg Weight (kg)</div></div>
+      <div class="macro-card"><div class="value" style="color:var(--protein-c)">${gymDays}</div><div class="label">💪 Gym Days</div></div>
+      <div class="macro-card"><div class="value" style="color:var(--success)">${cardioDays}</div><div class="label">🏃 Cardio Days${cardioDisplay}</div></div>
+      <div class="macro-card"><div class="value" style="color:var(--accent2)">${totalSteps.toLocaleString()}</div><div class="label">👟 Total Steps</div></div>
     </div>
     <div class="progress-container">
       <div class="progress-label"><span>Weekly Progress</span><span>${totalCal} / ${state.targets.weeklyCal} kcal</span></div>
@@ -1136,7 +2241,7 @@ function renderWeekly() {
   html += `<div class="card"><h3>📅 Daily Breakdown</h3>
     <div style="overflow-x:auto;">
     <table style="width:100%;font-size:0.8rem;border-collapse:collapse;">
-      <tr style="color:#00d4ff;border-bottom:1px solid rgba(255,255,255,0.1);">
+      <tr style="color:var(--accent);border-bottom:1px solid var(--overlay-3);">
         <th style="padding:8px 4px;text-align:left;">Day</th>
         <th style="padding:8px 4px;text-align:center;">Calories</th>
         <th style="padding:8px 4px;text-align:center;">Steps</th>
@@ -1146,16 +2251,17 @@ function renderWeekly() {
         <th style="padding:8px 4px;text-align:left;">Trained</th>
       </tr>`;
   weekDays.forEach(day => {
-    const calColor = day.dayCal > state.targets.dailyCal ? '#e74c3c' : day.dayCal > 0 ? '#27ae60' : '#555';
+    const calColor = day.dayCal > state.targets.dailyCal ? 'var(--danger)' : day.dayCal > 0 ? 'var(--success)' : 'var(--text-secondary)';
     const partsStr = day.bodyParts.length > 0 ? day.bodyParts.join(', ') : '—';
-    html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05);${day.isToday ? 'background:rgba(0,212,255,0.08);' : ''}">
-      <td style="padding:8px 4px;font-weight:${day.isToday ? 'bold' : 'normal'};color:${day.isToday ? '#ffd700' : '#e0e0e0'}">${day.dayName} ${day.date}</td>
+    const cardioStr = day.cardio ? (day.cardioDuration ? `✅ (${day.cardioDuration}min)` : '✅') : '—';
+    html += `<tr style="border-bottom:1px solid var(--overlay-1);${day.isToday ? 'background:var(--accent-glow);' : ''}">
+      <td style="padding:8px 4px;font-weight:${day.isToday ? 'bold' : 'normal'};color:${day.isToday ? 'var(--accent2)' : 'var(--text-primary)'}">${day.dayName} ${day.date}</td>
       <td style="padding:8px 4px;text-align:center;color:${calColor};font-weight:bold;">${day.dayCal || '-'}</td>
-      <td style="padding:8px 4px;text-align:center;color:#ffd700;">${day.steps || '—'}</td>
+      <td style="padding:8px 4px;text-align:center;color:var(--accent2);">${day.steps || '—'}</td>
       <td style="padding:8px 4px;text-align:center;">${day.gym ? '✅' : '—'}</td>
-      <td style="padding:8px 4px;text-align:center;">${day.cardio ? '✅' : '—'}</td>
-      <td style="padding:8px 4px;text-align:center;color:#a29bfe;">${day.weight || '—'}</td>
-      <td style="padding:8px 4px;font-size:0.7rem;color:#94a3b8;">${partsStr}</td>
+      <td style="padding:8px 4px;text-align:center;">${cardioStr}</td>
+      <td style="padding:8px 4px;text-align:center;color:var(--fat-c);">${day.weight || '—'}</td>
+      <td style="padding:8px 4px;font-size:0.7rem;color:var(--text-secondary);">${partsStr}</td>
     </tr>`;
   });
   html += `</table></div></div>`;
@@ -1172,27 +2278,70 @@ function changeWeek(offset) {
 
 // ========== FOOD DB (in Settings) ==========
 
+// Sort key + direction are tracked separately (same pattern as the Lending sort): the dropdown
+// picks the field, a small arrow button flips its direction. A plain <select> can't detect
+// re-selecting its already-active value, so direction lives on its own control instead.
+let catalogSort = 'name';
+let catalogSortDir = 'asc';
+const CATALOG_SORT_DEFAULT_DIR = { name: 'asc', added: 'desc', cal: 'desc', protein: 'desc', carbs: 'desc', fat: 'desc', fibre: 'desc' };
+
+function setCatalogSort(key) {
+  if (key === catalogSort) {
+    // Toggle direction if clicking the same column again
+    catalogSortDir = catalogSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    catalogSort = key;
+    catalogSortDir = CATALOG_SORT_DEFAULT_DIR[key] || 'desc';
+  }
+  filterFoodList(document.getElementById('foodDBSearch').value);
+}
+
+function toggleCatalogSortDir() {
+  catalogSortDir = catalogSortDir === 'asc' ? 'desc' : 'asc';
+  filterFoodList(document.getElementById('foodDBSearch').value);
+}
+
 function filterFoodList(query) {
   const list = document.getElementById('foodList');
   if (!list) return;
-  const sortEl = document.getElementById('catalogSort');
-  const sortMode = sortEl ? sortEl.value : 'alpha';
+  const flip = catalogSortDir === 'desc' ? -1 : 1;
   let filtered = query ? state.foodDB.filter(f => f.name.toLowerCase().includes(query.toLowerCase())) : state.foodDB.slice();
-  if (sortMode === 'alpha') {
-    filtered.sort((a, b) => a.name.localeCompare(b.name));
+  if (catalogSort === 'name') {
+    filtered.sort((a, b) => flip * a.name.localeCompare(b.name));
+  } else if (catalogSort === 'cal') {
+    filtered.sort((a, b) => flip * ((Number(a.cal) || 0) - (Number(b.cal) || 0)));
+  } else if (catalogSort === 'protein') {
+    filtered.sort((a, b) => flip * ((Number(a.protein) || 0) - (Number(b.protein) || 0)));
+  } else if (catalogSort === 'carbs') {
+    filtered.sort((a, b) => flip * ((Number(a.carbs) || 0) - (Number(b.carbs) || 0)));
+  } else if (catalogSort === 'fat') {
+    filtered.sort((a, b) => flip * ((Number(a.fat) || 0) - (Number(b.fat) || 0)));
+  } else if (catalogSort === 'fibre') {
+    filtered.sort((a, b) => flip * ((Number(a.fibre) || 0) - (Number(b.fibre) || 0)));
   } else {
-    // Last added = reverse of array order (newest at top)
-    filtered.reverse();
+    // "Added" order = position in state.foodDB (insertion order). Ascending = oldest first,
+    // descending = newest first.
+    filtered.sort((a, b) => flip * (state.foodDB.indexOf(a) - state.foodDB.indexOf(b)));
   }
-  let html = `<div class="food-row food-row-header"><span>Name</span><span>Qty</span><span>P(g)</span><span>C(g)</span><span>F(g)</span><span>Cal</span><span></span></div>`;
+  let html = `<div class="food-row food-row-header">
+    <span>Name</span>
+    <span>Qty</span>
+    <span style="cursor:pointer;" onclick="setCatalogSort('protein')" title="Click to sort">Protein(g) ${catalogSort === 'protein' ? (catalogSortDir === 'desc' ? '↓' : '↑') : ''}</span>
+    <span style="cursor:pointer;" onclick="setCatalogSort('carbs')" title="Click to sort">Carbs(g) ${catalogSort === 'carbs' ? (catalogSortDir === 'desc' ? '↓' : '↑') : ''}</span>
+    <span style="cursor:pointer;" onclick="setCatalogSort('fat')" title="Click to sort">Fats(g) ${catalogSort === 'fat' ? (catalogSortDir === 'desc' ? '↓' : '↑') : ''}</span>
+    <span style="cursor:pointer;" onclick="setCatalogSort('fibre')" title="Click to sort">Fibre(g) ${catalogSort === 'fibre' ? (catalogSortDir === 'desc' ? '↓' : '↑') : ''}</span>
+    <span style="cursor:pointer;" onclick="setCatalogSort('cal')" title="Click to sort">Calories ${catalogSort === 'cal' ? (catalogSortDir === 'desc' ? '↓' : '↑') : ''}</span>
+    <span></span>
+  </div>`;
   filtered.forEach((f, idx) => {
     const realIdx = state.foodDB.indexOf(f);
     html += `<div class="food-row">
       <span>${f.name}</span><span>${f.qty} ${f.unit}</span>
-      <span style="color:#ff6b6b">${f.protein}</span>
-      <span style="color:#ffd700">${f.carbs}</span>
-      <span style="color:#a29bfe">${f.fat}</span>
-      <span style="color:#00d4ff">${f.cal}</span>
+      <span style="color:var(--protein-c)">${f.protein}</span>
+      <span style="color:var(--carbs-c)">${f.carbs}</span>
+      <span style="color:var(--fat-c)">${f.fat}</span>
+      <span style="color:var(--text-secondary)">${f.fibre || 0}</span>
+      <span style="color:var(--cal-c)">${f.cal}</span>
       <span><button class="btn btn-danger btn-sm" onclick="deleteFood(${realIdx})">✕</button></span>
     </div>`;
   });
@@ -1288,11 +2437,42 @@ function exportData() {
   showToast('Data exported!');
 }
 
-// ========== SETTINGS TAB ==========
+// ========== SETTINGS TAB (in Nutrition module) ==========
 function renderSettings() {
+  let html = ``;
+
+  // Food Catalog Section (collapsed by default)
+  html += `<div class="card">
+    <h2 style="cursor:pointer;" onclick="toggleCatalog()">🍎 Catalog (${state.foodDB.length} items) <span id="catalogToggleIcon">▶</span></h2>
+    <div id="catalogContent" style="display:none;">
+    <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;">
+      <input type="text" id="foodDBSearch" placeholder="Search foods..." style="flex:1;min-width:200px;padding:8px;border-radius:8px;border:1px solid var(--overlay-4);background:var(--overlay-2);color:var(--text-primary);" oninput="filterFoodList(this.value)">
+      <select id="catalogSort" onchange="setCatalogSort(this.value)" style="padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-size:0.8rem;">
+        <option value="name" ${catalogSort === 'name' ? 'selected' : ''}>Name</option>
+        <option value="added" ${catalogSort === 'added' ? 'selected' : ''}>Date added</option>
+        <option value="cal" ${catalogSort === 'cal' ? 'selected' : ''}>Calories</option>
+      </select>
+      <button class="fin-sort-dir" title="${catalogSortDir === 'desc' ? 'Descending' : 'Ascending'} -- click to reverse" onclick="toggleCatalogSortDir()">${catalogSortDir === 'desc' ? '↓' : '↑'}</button>
+      <button class="btn btn-primary" onclick="openNewFoodModal()">+ Add Food</button>
+      <button class="btn btn-success" onclick="showImport()">📥 Import CSV</button>
+    </div>
+    <div id="importSection" style="display:none;margin:10px 0;">
+      <textarea id="csvInput" class="import-area" placeholder="Paste CSV here: name,qty,unit,cp(0/1),protein,carbs,fat,calories,fibre"></textarea>
+      <button class="btn btn-success btn-sm" onclick="importCSV()" style="margin-top:5px;">Import</button>
+    </div>
+    <div class="food-list" id="foodList"></div>
+    </div>
+  </div>`;
+
+  document.getElementById('tab-settings').innerHTML = html;
+  filterFoodList('');
+}
+
+// ========== SETTINGS MODULE (standalone) ==========
+function renderSettingsModule() {
   const t = state.targets;
   let html = `<div class="card">
-    <h2>⚙️ Settings & Targets</h2>
+    <h2>⚙️ Nutrition Settings & Targets</h2>
     <div class="settings-grid">
       <div class="setting-item"><label>Body Weight (kg)</label><input type="number" value="${t.weight}" onchange="updateTarget('weight', this.value)"></div>
       <div class="setting-item"><label>Activity Level</label>
@@ -1312,7 +2492,7 @@ function renderSettings() {
   </div>
   <div class="card">
     <h2>📦 Data Management</h2>
-    <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:10px;">Use Sync to transfer data between devices. Export on one → share the file → Import on the other.</p>
+    <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px;">Use Sync to transfer data between devices. Export on one → share the file → Import on the other. Data includes: Nutrition (food logs, targets, catalog) + Personal Finances (loans, investments).</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <button class="btn btn-primary" style="flex:1;min-width:120px;padding:12px;" onclick="exportData()">📤 Export / Backup</button>
       <label class="btn btn-success" style="flex:1;min-width:120px;padding:12px;text-align:center;cursor:pointer;">📥 Import / Restore <input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
@@ -1322,29 +2502,7 @@ function renderSettings() {
     </div>
   </div>`;
 
-  // Food Catalog Section (collapsed by default)
-  html += `<div class="card">
-    <h2 style="cursor:pointer;" onclick="toggleCatalog()">🍎 Catalog (${state.foodDB.length} items) <span id="catalogToggleIcon">▶</span></h2>
-    <div id="catalogContent" style="display:none;">
-    <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;">
-      <input type="text" id="foodDBSearch" placeholder="Search foods..." style="flex:1;min-width:200px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#e0e0e0;" oninput="filterFoodList(this.value)">
-      <select id="catalogSort" onchange="filterFoodList(document.getElementById('foodDBSearch').value)" style="padding:8px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:rgba(15,23,42,0.8);color:#f1f5f9;font-size:0.8rem;">
-        <option value="alpha">A → Z</option>
-        <option value="recent">Last Added</option>
-      </select>
-      <button class="btn btn-primary" onclick="openNewFoodModal()">+ Add Food</button>
-      <button class="btn btn-success" onclick="showImport()">📥 Import CSV</button>
-    </div>
-    <div id="importSection" style="display:none;margin:10px 0;">
-      <textarea id="csvInput" class="import-area" placeholder="Paste CSV here: name,qty,unit,cp(0/1),protein,carbs,fat,calories,fibre"></textarea>
-      <button class="btn btn-success btn-sm" onclick="importCSV()" style="margin-top:5px;">Import</button>
-    </div>
-    <div class="food-list" id="foodList"></div>
-    </div>
-  </div>`;
-
-  document.getElementById('tab-settings').innerHTML = html;
-  filterFoodList('');
+  document.getElementById('settings-content').innerHTML = html;
 }
 
 function updateTarget(key, value) {
@@ -1404,6 +2562,7 @@ function clearAllData() {
 function renderAll() {
   if (activeModule === 'macro') renderDaily();
   else if (activeModule === 'finance') showFinTab(activeFinTab);
+  else if (activeModule === 'settings') renderSettingsModule();
   renderHomeSummary();
 }
 
@@ -1440,6 +2599,55 @@ let loanFilter = 'all';
 function setLoanFilter(f) {
   loanFilter = f;
   renderLending();
+}
+
+// How the visible loan list is ordered. Persists across re-renders like loanFilter does.
+// Sort key + direction are tracked separately so that "Name" and "Amount" can each be a single
+// dropdown entry: picking the same key again flips its direction (A-Z <-> Z-A, high-low <-> low-high)
+// instead of needing two separate options in the list.
+let loanSort = 'name';
+let loanSortDir = 'asc';
+// Sensible default direction the first time each sort key is picked (e.g. amount defaults to
+// highest-first, since that's usually more useful than starting from the smallest loan).
+const LOAN_SORT_DEFAULT_DIR = { name: 'asc', amount: 'desc', 'interest-due': 'desc', date: 'desc' };
+
+function setLoanSort(s) {
+  loanSort = s;
+  loanSortDir = LOAN_SORT_DEFAULT_DIR[s] || 'asc';
+  renderLending();
+}
+
+// Flips the direction of the currently active sort (A-Z <-> Z-A, high-low <-> low-high, etc).
+function toggleLoanSortDir() {
+  if (loanSort === 'overdue-first') return; // no direction to flip
+  loanSortDir = loanSortDir === 'asc' ? 'desc' : 'asc';
+  renderLending();
+}
+
+// Comparator for the current loanSort/loanSortDir. calcs is the {id -> calcLoan result} map so
+// the comparator can rank by derived figures (outstanding, interest due) as well as raw fields.
+function loanComparator(calcs) {
+  const flip = loanSortDir === 'desc' ? -1 : 1;
+  switch (loanSort) {
+    case 'name':
+      return (a, b) => flip * a.borrower.localeCompare(b.borrower);
+    case 'amount':
+      return (a, b) => flip * ((Number(a.principal) || 0) - (Number(b.principal) || 0));
+    case 'interest-due':
+      return (a, b) => flip * (calcs[a.id].interestPending - calcs[b.id].interestPending);
+    case 'overdue-first':
+      // Overdue loans first, ranked by the largest amount of interest pending; everything else follows by name.
+      return (a, b) => {
+        const ca = calcs[a.id], cb = calcs[b.id];
+        if (ca.overdue !== cb.overdue) return ca.overdue ? -1 : 1;
+        if (ca.overdue && cb.overdue) return cb.interestPending - ca.interestPending;
+        return a.borrower.localeCompare(b.borrower);
+      };
+    case 'date':
+      return (a, b) => flip * (new Date(a.startDate) - new Date(b.startDate));
+    default:
+      return (a, b) => a.borrower.localeCompare(b.borrower);
+  }
 }
 
 // Collapsed-by-default "add" panels so the data stays at the top of the screen.
@@ -1634,6 +2842,24 @@ function calcLoan(loan) {
   };
 }
 
+// Derives the two dates shown on the loan card's due-status row:
+//   - overdueSince: the END date of the OLDEST cycle that is still short (only set when overdue).
+//   - nextDue: the END date of the most recent elapsed cycle (i.e. when the next cycle's
+//     interest becomes due). Falls back to one month after the start date if no cycle has
+//     elapsed yet.
+function nextDueInfo(loan, calc) {
+  const cycles = calc.schedule.cycles;
+  let overdueSince = null;
+  if (calc.overdue) {
+    const oldestShort = cycles.find(cy => (cy.due - cy.paid) > 0.01);
+    if (oldestShort) overdueSince = oldestShort.end;
+  }
+  const nextDue = cycles.length > 0
+    ? cycles[cycles.length - 1].end
+    : (loan.startDate ? addMonths(loan.startDate, 1).toISOString().split('T')[0] : null);
+  return { overdueSince, nextDue };
+}
+
 // ========================= LENDING TAB =========================
 function renderLending() {
   const loans = state.finance.loans;
@@ -1704,9 +2930,37 @@ function renderLending() {
       ['advance', 'Advance ' + advCount],
       ['cleared', 'Cleared ' + clearedCount]
     ];
+    // One dropdown entry per sort key (down from 7). "Name", "Amount", "Interest due" and
+    // "Loan date" are all reversible -- the small arrow button next to the dropdown flips the
+    // active key's direction. A plain <select> can't detect re-selecting its current value
+    // (browsers don't fire `change` for that), so direction lives on its own control instead.
+    const sortOptions = [
+      ['name', 'Name'],
+      ['amount', 'Amount'],
+      ['interest-due', 'Interest due'],
+      ['overdue-first', 'Overdue first'],
+      ['date', 'Loan date']
+    ];
+    const reversible = loanSort !== 'overdue-first';
+    const dirLabels = {
+      name: ['A→Z', 'Z→A'], amount: ['Low→High', 'High→Low'],
+      'interest-due': ['Low→High', 'High→Low'], date: ['Oldest first', 'Newest first']
+    };
+    const dirTitle = reversible
+      ? `Currently: ${dirLabels[loanSort][loanSortDir === 'desc' ? 1 : 0]}. Click to reverse.`
+      : 'This sort has no direction to reverse';
     html += `<div class="fin-filters">` + filters.map(([key, label]) =>
       `<button class="fin-filter ${loanFilter === key ? 'active' : ''}" onclick="setLoanFilter('${key}')">${label}</button>`
-    ).join('') + `</div>`;
+    ).join('') +
+      `<select class="fin-sort" title="Sort loans by" onchange="setLoanSort(this.value)">` +
+      sortOptions.map(([key, label]) =>
+        `<option value="${key}" ${loanSort === key ? 'selected' : ''}>${label}</option>`
+      ).join('') +
+      `</select>` +
+      `<button class="fin-sort-dir ${reversible ? '' : 'disabled'}" title="${dirTitle}"
+        onclick="${reversible ? 'toggleLoanSortDir()' : ''}" ${reversible ? '' : 'disabled'}>
+        ${loanSortDir === 'desc' ? '↓' : '↑'}
+      </button></div>`;
 
     const visible = loans.filter(l => {
       const c = calcs[l.id];
@@ -1714,7 +2968,7 @@ function renderLending() {
       if (loanFilter === 'advance') return c.interestAdvance > 0.01;
       if (loanFilter === 'cleared') return c.outstandingPrincipal <= 0.01;
       return true;
-    });
+    }).sort(loanComparator(calcs));
 
     if (visible.length === 0) {
       html += `<div class="fin-empty">
@@ -1729,8 +2983,13 @@ function renderLending() {
       const settled = c.outstandingPrincipal <= 0.01;
 
       // Status drives both the badge and the card's left edge colour.
+      // Principal being repaid ("settled") doesn't mean the loan is fully cleared -- any
+      // outstanding interest still needs to be flagged, so that check takes priority.
       let stateClass, badge;
-      if (settled) {
+      if (settled && c.overdue) {
+        stateClass = 'is-due';
+        badge = `<span class="status-badge status-due">⚠ ${fmtMoney(c.interestPending)} interest due</span>`;
+      } else if (settled) {
         stateClass = 'is-cleared';
         badge = `<span class="status-badge status-ok">✔ Cleared</span>`;
       } else if (c.overdue) {
@@ -1746,6 +3005,31 @@ function renderLending() {
 
       const repaidPct = c.principal > 0 ? Math.min(c.principalPaid / c.principal * 100, 100) : 0;
 
+      // Overdue-since / next-due chip, shown next to the status badge.
+      const dueInfo = nextDueInfo(loan, c);
+      let dueChip = '';
+      if (dueInfo.overdueSince) {
+        dueChip = `<span class="overdue-chip">🕓 Overdue since ${fmtDay(dueInfo.overdueSince)}</span>`;
+      } else if (dueInfo.nextDue) {
+        dueChip = `<span class="next-due-chip">📅 Next due ${fmtDay(dueInfo.nextDue)}</span>`;
+      }
+
+      // Monthly cycle timeline strip: green = paid, red = due (past cycle short), grey = future.
+      // The most recently elapsed cycle is flagged so its label can be highlighted as "next up".
+      let cycleStrip = '';
+      if (c.schedule.cycles.length > 0) {
+        const monthAbbr = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const lastIdx = c.schedule.cycles.length - 1;
+        const pips = c.schedule.cycles.map((cy, idx) => {
+          const short = (cy.due - cy.paid) > 0.01;
+          const pipClass = short ? 'pip-due' : 'pip-paid';
+          const isNext = idx === lastIdx ? ' is-next' : '';
+          const lbl = monthAbbr[new Date(cy.start).getMonth()];
+          return `<div class="cycle-pip${isNext}"><div class="pip-dot ${pipClass}"></div><div class="pip-lbl">${lbl}</div></div>`;
+        }).join('');
+        cycleStrip = `<div class="cycle-strip">${pips}</div>`;
+      }
+
       html += `<div class="loan-card ${stateClass}">
         <div class="loan-top">
           <div class="loan-avatar">${escapeHtml(initialsOf(loan.borrower))}</div>
@@ -1756,7 +3040,9 @@ function renderLending() {
           <button class="icon-btn" title="Delete loan" aria-label="Delete loan for ${escapeHtml(loan.borrower)}" onclick="deleteLoan('${loan.id}')">🗑</button>
         </div>
 
-        <div style="margin-top:10px;">${badge}</div>
+        <div class="status-row">${badge}${(settled && !c.overdue) ? '' : dueChip}</div>
+
+        ${cycleStrip}
 
         <div class="loan-progress">
           <div class="p-top"><span>Principal repaid</span><span>${fmtMoney(c.principalPaid)} of ${fmtMoney(c.principal)} · ${repaidPct.toFixed(0)}%</span></div>
@@ -2180,7 +3466,7 @@ function renderQuickAdd() {
   quickFoods.forEach(f => {
     html += `<span class="quick-add-btn" style="display:inline-flex;align-items:center;gap:5px;">
       <span onclick="quickAddFood('${f.name.replace(/'/g,"\\'")}')" style="cursor:pointer">${f.name} (${f.cal} kcal)</span>
-      <span onclick="hideQuickAdd('${f.name.replace(/'/g,"\\'")}')" style="cursor:pointer;color:#e74c3c;font-weight:bold;font-size:0.7rem;" title="Remove from Quick Add">✕</span>
+      <span onclick="hideQuickAdd('${f.name.replace(/'/g,"\\'")}')" style="cursor:pointer;color:var(--danger);font-weight:bold;font-size:0.7rem;" title="Remove from Quick Add">✕</span>
     </span>`;
   });
   html += `</div></div>`;
