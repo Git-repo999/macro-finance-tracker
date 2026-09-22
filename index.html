@@ -848,7 +848,15 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 @media (max-width: 600px) {
   .daily-swipe {
     display: flex;
-    align-items: flex-start;
+    /* Panels must stretch to fill the container's full height (not flex-start), otherwise a
+     * shorter panel (Overview) sits at the top with empty space below it while a taller one
+     * (Meals) fills the whole row -- the two "pages" end up at different vertical positions,
+     * so a horizontal swipe reveals a different vertical slice of content depending on where
+     * the page happens to be scrolled, which is what produced the "half Activity Tracker, half
+     * Meals" stuck-in-the-middle symptom. Stretching + giving each panel its own vertical
+     * scroll keeps both pages pinned to the exact same vertical footprint, so swiping only ever
+     * changes which page is horizontally in view. */
+    align-items: stretch;
     width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
@@ -860,13 +868,17 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
   .daily-swipe::-webkit-scrollbar { display: none; }
   .daily-swipe-panel {
     display: block;
-    align-self: flex-start;
     flex: 0 0 100%;
     width: 100%;
     min-width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
     scroll-snap-align: start;
     scroll-snap-stop: always;
     padding: 0 1px;
+    box-sizing: border-box;
   }
   .daily-swipe-panel > * { max-width: 100%; }
   .daily-meals-panel { padding-top: 1px; }
