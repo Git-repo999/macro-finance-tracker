@@ -2294,24 +2294,43 @@ function goToDailySwipePage(page) {
 
 let dailySwipePage = 0;
 
+// Tracks the resize listener from the most recent setupDailySwipe() call so it can be removed
+// before attaching a new one. renderDaily() (and therefore setupDailySwipe()) reruns on every
+// food/activity edit, and #tab-daily's innerHTML is replaced each time -- the old #dailySwipe
+// element (and its scroll listener) is discarded with it, but a window-level resize listener
+// has no owning element to be garbage-collected with, so without this it would accumulate one
+// stale listener (closing over a detached, no-longer-visible swipe element) per render.
+let dailySwipeResizeHandler = null;
+
 function setupDailySwipe() {
   const swipe = document.getElementById('dailySwipe');
   const nav = document.getElementById('dailySwipeNav');
+  if (dailySwipeResizeHandler) {
+    window.removeEventListener('resize', dailySwipeResizeHandler);
+    dailySwipeResizeHandler = null;
+  }
   if (!swipe || !nav) return;
   const isMobile = window.matchMedia && window.matchMedia('(max-width: 600px)').matches;
   if (!isMobile) {
     swipe.style.height = '';
     return;
   }
-  const panels = swipe.querySelectorAll('.daily-swipe-panel');
+  const panels = Array.from(swipe.querySelectorAll('.daily-swipe-panel'));
   const dots = nav.querySelectorAll('[data-swipe-page]');
   const label = document.getElementById('dailySwipeLabel');
   const hint = document.getElementById('dailySwipeHint');
-  const update = () => {
-    const page = swipe.clientWidth > 0 ? Math.round(swipe.scrollLeft / swipe.clientWidth) : 0;
+
+  // Height is taken from the tallest panel up front (not per-scroll-event) so the container's
+  // size never changes mid-gesture. Resizing height while the browser is still resolving a scroll
+  // snap shifts the effective scroll position under the finger, which is what caused the "stuck
+  // in the middle, swipe again" bug for the taller (non fixed-height) meal layouts.
+  const syncHeight = () => {
+    const tallest = Math.max(...panels.map(p => p.scrollHeight));
+    if (tallest > 0) swipe.style.height = `${tallest}px`;
+  };
+
+  const updateIndicators = page => {
     dailySwipePage = page;
-    const activePanel = panels[page];
-    if (activePanel) swipe.style.height = `${activePanel.scrollHeight}px`;
     dots.forEach(dot => {
       const active = Number(dot.dataset.swipePage) === page;
       dot.classList.toggle('active', active);
@@ -2320,9 +2339,24 @@ function setupDailySwipe() {
     if (label) label.textContent = page === 0 ? 'Overview' : 'Meals';
     if (hint) hint.textContent = page === 0 ? 'Swipe for Meals' : 'Swipe for Overview';
   };
+
+  // Read the page during scroll (for the dots/labels only -- cheap and safe to do continuously),
+  // but only resync height after the scroll has fully settled, using the standard "no scroll
+  // event for N ms" idle-detection pattern (there's no reliable cross-browser 'scrollend' yet).
+  let settleTimer = null;
+  const onScroll = () => {
+    const page = swipe.clientWidth > 0 ? Math.round(swipe.scrollLeft / swipe.clientWidth) : 0;
+    updateIndicators(page);
+    if (settleTimer) clearTimeout(settleTimer);
+    settleTimer = setTimeout(syncHeight, 120);
+  };
+
+  syncHeight();
   if (dailySwipePage > 0) swipe.scrollLeft = dailySwipePage * swipe.clientWidth;
-  swipe.addEventListener('scroll', update, { passive: true });
-  update();
+  updateIndicators(dailySwipePage);
+  swipe.addEventListener('scroll', onScroll, { passive: true });
+  dailySwipeResizeHandler = syncHeight;
+  window.addEventListener('resize', dailySwipeResizeHandler);
 }
 
 function setupSwipeDecks() {
@@ -2385,6 +2419,7 @@ function setupSwipeDecks() {
       state.startX = x;
       state.startY = y;
       state.dragX = 0;
+      state.axis = null;
       state.input = input;
       state.dragging = true;
       deck.classList.add('is-dragging');
@@ -2394,11 +2429,23 @@ function setupSwipeDecks() {
       if (!state.dragging || state.locked || state.input !== input) return;
       const dx = x - state.startX;
       const dy = y - state.startY;
-      if (Math.abs(dx) > Math.abs(dy) + 4) {
-        state.dragX = dx;
-        render(dx);
-        if (event && event.cancelable) event.preventDefault();
+
+      // Axis lock is decided once, the first time either axis moves far enough to be
+      // unambiguous, and then held for the rest of the gesture. Deciding on every move (as
+      // before) let a card's own vertical scroll (overflow-y: auto on .loan-card/.inv-card)
+      // win the gesture before the horizontal intent became clear, since the very first few
+      // pixels of a real-world swipe are rarely perfectly horizontal. Locking early -- and
+      // preventing default immediately once locked -- stops the browser from separately
+      // starting a native scroll on the card underneath.
+      if (state.axis === null) {
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return; // too small to classify yet
+        state.axis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
       }
+      if (state.axis === 'y') return; // let the card's own vertical scroll handle it
+
+      state.dragX = dx;
+      render(dx);
+      if (event && event.cancelable) event.preventDefault();
     };
 
     const endDrag = (x, input) => {
@@ -2463,10 +2510,14 @@ function setupSwipeDecks() {
     deck.addEventListener('pointermove', onPointerMove, { passive: false });
     deck.addEventListener('pointerup', onPointerUp);
     deck.addEventListener('pointercancel', onPointerCancel);
-    deck.addEventListener('touchstart', onTouchStart, { passive: true });
-    deck.addEventListener('touchmove', onTouchMove, { passive: false });
-    deck.addEventListener('touchend', onTouchEnd, { passive: true });
-    deck.addEventListener('touchcancel', onTouchCancel, { passive: true });
+    // Capture phase: this must see the touch before it reaches a scrollable card interior
+    // (.loan-card / .inv-card have overflow-y: auto for their long ledgers), otherwise the
+    // browser can commit that element to its own native scroll before our axis-lock in
+    // moveDrag gets a chance to claim a horizontal gesture.
+    deck.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
+    deck.addEventListener('touchmove', onTouchMove, { passive: false, capture: true });
+    deck.addEventListener('touchend', onTouchEnd, { passive: true, capture: true });
+    deck.addEventListener('touchcancel', onTouchCancel, { passive: true, capture: true });
     deck.addEventListener('keydown', onKeyDown);
     render(0);
   });
