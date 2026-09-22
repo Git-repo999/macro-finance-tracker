@@ -276,6 +276,67 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
   color: var(--text-primary);
 }
 
+/* Option 3: Accent Rail — shared Nutrition/Finance header treatment. */
+.app-header {
+  position: relative;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+.app-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 54px;
+  height: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+}
+.header-title { min-width: 0; gap: 10px; }
+#appTitle {
+  color: var(--accent);
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.back-btn {
+  width: 36px;
+  height: 36px;
+  flex-basis: 36px;
+  border-radius: 10px;
+  color: var(--accent);
+}
+.back-btn:hover {
+  background: var(--accent);
+  color: var(--btn-text);
+}
+.module-header {
+  position: relative;
+  border-bottom: none;
+  padding-bottom: 8px;
+  margin-bottom: 5px;
+}
+.module-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 48px;
+  height: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+}
+.module-header-left { gap: 9px; }
+.module-icon { font-size: 22px; }
+.module-title-text {
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
 /* Menu Button (☰ Icon) */
 .menu-btn {
   background: var(--bg-card);
@@ -398,6 +459,24 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .date-nav button:hover { box-shadow: 0 2px 10px var(--accent-glow); }
 .date-display { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); text-align: center; }
 .date-display input[type="date"] { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; font-size: 0.85rem; }
+
+/* Option 3 date treatment: a compact date rail matching both module headers. */
+.date-nav {
+  margin: 12px 0;
+  padding: 10px 12px;
+  background: linear-gradient(90deg, var(--accent-glow), transparent 72%);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+}
+.date-nav button {
+  width: 34px;
+  height: 34px;
+  font-size: 1rem;
+  box-shadow: none;
+}
+.date-nav button:hover { box-shadow: 0 2px 10px var(--accent-glow); }
+.date-display { font-size: 0.98rem; letter-spacing: 0.01em; }
+
 </style>
 </head>
 <body>
@@ -761,6 +840,98 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
   .meal-layout-loseit .meal-progress-ring::after { inset: 5px; }
 }
 
+/* Mobile daily dashboard: overview and meals become swipeable pages. Desktop remains vertical. */
+.daily-swipe { display: contents; }
+.daily-swipe-panel { display: contents; }
+.daily-swipe-nav { display: none; }
+
+@media (max-width: 600px) {
+  .daily-swipe {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .daily-swipe::-webkit-scrollbar { display: none; }
+  .daily-swipe-panel {
+    display: block;
+    align-self: flex-start;
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    padding: 0 1px;
+  }
+  .daily-swipe-panel > * { max-width: 100%; }
+  .daily-meals-panel { padding-top: 1px; }
+  .daily-swipe-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 5px 0 12px;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+  }
+  .daily-swipe-nav button {
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+  .daily-swipe-nav button:hover { border-color: var(--accent); color: var(--accent); }
+  .daily-swipe-dots { display: flex; gap: 5px; }
+  .daily-swipe-dot {
+    border: none !important;
+    background: var(--overlay-3) !important;
+    width: 7px !important;
+    height: 7px !important;
+    padding: 0;
+  }
+  .daily-swipe-dot.active { background: var(--accent) !important; transform: scale(1.25); }
+  .daily-swipe-label { min-width: 92px; text-align: center; }
+}
+
+/* Additional selectable meal deck layout. */
+.meal-layout-stacked-swipe {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  overflow-x: auto;
+  padding: 4px 8px 15px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.meal-layout-stacked-swipe::-webkit-scrollbar { display: none; }
+.meal-layout-stacked-swipe .meal-section {
+  position: relative;
+  flex: 0 0 88%;
+  margin: 12px -4% 12px 0;
+  padding: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  scroll-snap-align: center;
+  box-shadow: 0 12px 25px rgba(0,0,0,0.35);
+}
+.meal-layout-stacked-swipe .meal-section:nth-child(odd) { transform: rotate(-1.8deg); z-index: 2; }
+.meal-layout-stacked-swipe .meal-section:nth-child(even) { transform: rotate(1.8deg); z-index: 1; }
+.meal-layout-stacked-swipe .meal-header { background: transparent; border: none; padding: 0 0 9px; }
+.meal-layout-stacked-swipe .meal-items { margin-top: 3px; }
+.meal-layout-stacked-swipe .meal-item { padding: 7px 0; border-bottom-color: var(--overlay-1); }
+.meal-layout-stacked-swipe .meal-deck-hint { text-align: center; color: var(--text-secondary); font-size: 0.7rem; margin: -4px 0 8px; }
+
 /* Food Search */
 .search-box { position: relative; margin: 8px 0; }
 .search-box input {
@@ -874,8 +1045,44 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 /* Import/Export */
 .import-area { width: 100%; min-height: 100px; background: var(--overlay-1); border: 1px dashed var(--overlay-4); border-radius: 8px; padding: 10px; color: var(--text-primary); font-size: 0.8rem; resize: vertical; }
 
-@media (max-width: 600px) {
-  .macro-tiles { grid-template-columns: repeat(2, 1fr); }
+  .app-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 150px;
+    align-items: start;
+    gap: 6px;
+  }
+  .header-title {
+    grid-column: 1;
+    width: auto;
+    max-width: none;
+    flex: none;
+    min-width: 0;
+    overflow: hidden;
+  }
+  #appTitle {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    font-size: clamp(0.98rem, 5.2vw, 1.2rem);
+    letter-spacing: 0.03em;
+    line-height: 1.08;
+  }
+  .app-header > div:last-child {
+    grid-column: 2;
+    width: 150px;
+    min-width: 0;
+    flex: none;
+    justify-content: flex-end;
+    gap: 6px !important;
+  }
+  .app-header > div:last-child .theme-picker {
+    width: 112px;
+    max-width: 112px;
+    min-width: 0;
+  }
+
   .food-row { grid-template-columns: 2fr 1fr 1fr 1fr auto; }
   .food-row .hide-mobile { display: none; }
   .weekly-grid { grid-template-columns: repeat(4, 1fr); }
@@ -934,6 +1141,26 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .fin-ghost-btn:hover { background: var(--accent-glow); }
 .fin-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin: 8px 0; }
 
+/* ---- Expandable finance search and sort controls ---- */
+.fin-tool-buttons { display: flex; align-items: center; gap: 5px; }
+.fin-tool-btn {
+  width: 31px; height: 31px; padding: 0; border: 1px solid var(--border); border-radius: 9px;
+  background: var(--bg-primary); color: var(--text-secondary); cursor: pointer; font-size: 0.95rem;
+}
+.fin-tool-btn:hover, .fin-tool-btn.active { background: var(--accent); border-color: var(--accent); color: var(--btn-text); }
+.fin-tools-panel {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin: 8px 0 4px;
+  padding: 9px; border: 1px solid var(--border); border-radius: 11px; background: var(--bg-primary);
+}
+.fin-tools-panel input, .fin-tools-panel select {
+  flex: 1; min-width: 150px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-card); color: var(--text-primary); font-size: 0.8rem;
+}
+.fin-tools-panel input:focus, .fin-tools-panel select:focus { outline: none; border-color: var(--accent); }
+.fin-tools-panel .fin-sort-dir { flex: 0 0 auto; }
+.fin-tool-clear { border: none; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 1rem; }
+.fin-tool-clear:hover { color: var(--danger); }
+
 /* ---- Filter chips ---- */
 .fin-filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 2px; align-items: center; }
 .fin-filter {
@@ -957,6 +1184,112 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .fin-sort-dir.disabled:hover { border-color: var(--border); color: var(--text-primary); }
 .fin-filter:hover { color: var(--text-primary); }
 .fin-filter.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ---- Selectable finance card layouts ---- */
+.fin-sec-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; flex-wrap: wrap; }
+.fin-layout-picker { position: relative; flex: 0 0 auto; }
+.fin-layout-btn { width: 32px; height: 32px; padding: 0; border: 1px solid var(--border); border-radius: 9px; background: var(--bg-primary); color: var(--text-secondary); cursor: pointer; font-size: 1rem; }
+.fin-layout-btn:hover, .fin-layout-btn[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: var(--btn-text); }
+.fin-layout-menu { left: auto; right: 0; min-width: 230px; }
+.fin-layout-menu .dropdown-item { font-size: 0.78rem; }
+.fin-card-layout { width: 100%; }
+.fin-layout-stacked-card,
+.fin-layout-detail-pager,
+.fin-layout-stacked-swipe {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 3px 4px 15px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.fin-layout-stacked-card::-webkit-scrollbar,
+.fin-layout-detail-pager::-webkit-scrollbar,
+.fin-layout-stacked-swipe::-webkit-scrollbar { display: none; }
+.fin-layout-stacked-card > .loan-card,
+.fin-layout-stacked-card > .inv-card {
+  flex: 0 0 min(430px, 88%);
+  margin: 10px 0;
+  scroll-snap-align: start;
+  transform: rotate(-0.8deg);
+}
+.fin-layout-stacked-card > :nth-child(even) { transform: rotate(0.8deg); }
+.fin-layout-detail-pager { gap: 12px; }
+.fin-layout-detail-pager > .loan-card,
+.fin-layout-detail-pager > .inv-card {
+  flex: 0 0 100%;
+  margin: 10px 0;
+  scroll-snap-align: center;
+}
+.fin-layout-stacked-swipe { gap: 0; padding-left: 9px; }
+.fin-layout-stacked-swipe > .loan-card,
+.fin-layout-stacked-swipe > .inv-card {
+  position: relative;
+  flex: 0 0 88%;
+  margin: 12px -4% 12px 0;
+  scroll-snap-align: center;
+  box-shadow: 0 12px 25px rgba(0,0,0,0.35);
+}
+.fin-layout-stacked-swipe > :nth-child(odd) { transform: rotate(-1.8deg); z-index: 2; }
+.fin-layout-stacked-swipe > :nth-child(even) { transform: rotate(1.8deg); z-index: 1; }
+.fin-deck-hint { text-align: center; color: var(--text-secondary); font-size: 0.7rem; margin: -4px 0 8px; }
+
+/* Interactive deck overrides: uniform card size and one-card-at-a-time swipe behavior. */
+[data-swipe-deck] {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  gap: 0;
+  padding: 10px 0 12px;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+[data-swipe-deck] > .loan-card,
+[data-swipe-deck] > .inv-card {
+  position: absolute;
+  left: 6%;
+  top: 10px;
+  width: 88%;
+  height: 560px;
+  min-height: 560px;
+  margin: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-align: none;
+  transition: transform 0.32s cubic-bezier(.22,.8,.22,1), opacity 0.25s ease, filter 0.25s ease;
+  will-change: transform, opacity;
+}
+[data-swipe-deck].is-dragging > .loan-card,
+[data-swipe-deck].is-dragging > .inv-card { transition: none; }
+[data-swipe-deck].fin-layout-stacked-card,
+[data-swipe-deck].fin-layout-detail-pager,
+[data-swipe-deck].fin-layout-stacked-swipe { height: 585px; }
+[data-swipe-deck].fin-layout-detail-pager > .loan-card,
+[data-swipe-deck].fin-layout-detail-pager > .inv-card { left: 2%; width: 96%; }
+[data-swipe-deck].fin-layout-stacked-swipe > .loan-card,
+[data-swipe-deck].fin-layout-stacked-swipe > .inv-card { height: 570px; min-height: 570px; }
+[data-swipe-deck].meal-layout-stacked-swipe {
+  height: 425px;
+  min-height: 425px;
+  border-radius: 16px;
+}
+[data-swipe-deck].meal-layout-stacked-swipe > .meal-section {
+  position: absolute;
+  left: 6%;
+  top: 10px;
+  width: 88%;
+  height: 390px;
+  min-height: 390px;
+  margin: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-align: none;
+  transition: transform 0.32s cubic-bezier(.22,.8,.22,1), opacity 0.25s ease, filter 0.25s ease;
+  will-change: transform, opacity;
+}
+[data-swipe-deck].is-dragging > .meal-section { transition: none; }
 
 /* ---- Loan card ---- */
 .loan-card { background: var(--bg-card); border: 1px solid var(--border); border-left-width: 3px; border-radius: 16px; padding: 14px; margin: 10px 0; }
@@ -1264,6 +1597,7 @@ function init() {
   loadProgressStyle();
   loadRingMetric();
   loadMealLayout();
+  loadFinanceLayout();
   loadState();
   showHome();
 }
@@ -1350,7 +1684,8 @@ const MEAL_LAYOUTS = [
   { id: 'loseit', label: 'Lose It! Style' },
   { id: 'yazio', label: 'Yazio Style' },
   { id: 'lifesum', label: 'Lifesum Style' },
-  { id: 'onetap', label: 'One-tap Log Bar — Fastest' }
+  { id: 'onetap', label: 'One-tap Log Bar — Fastest' },
+  { id: 'stacked-swipe', label: 'Stacked Swipe Deck' }
 ];
 const MEAL_LAYOUT_KEY = 'macroTrackerMealLayout';
 let mealLayout = 'loseit';
@@ -1379,6 +1714,58 @@ function toggleMealLayoutMenu() {
 
 function getMealLayoutLabel() {
   return (MEAL_LAYOUTS.find(option => option.id === mealLayout) || MEAL_LAYOUTS[0]).label;
+}
+
+// ========== FINANCE CARD LAYOUT STYLE ==========
+const FINANCE_LAYOUTS = [
+  { id: 'stacked-card', label: 'Stacked Card Deck' },
+  { id: 'detail-pager', label: 'Finance Detail Pager' },
+  { id: 'stacked-swipe', label: 'Stacked Swipe Deck' }
+];
+const FINANCE_LAYOUT_KEY = 'macroTrackerFinanceLayout';
+let financeLayout = 'stacked-card';
+
+function loadFinanceLayout() {
+  const saved = localStorage.getItem(FINANCE_LAYOUT_KEY);
+  financeLayout = FINANCE_LAYOUTS.some(layout => layout.id === saved) ? saved : 'stacked-card';
+}
+
+function setFinanceLayout(layout) {
+  if (!FINANCE_LAYOUTS.some(option => option.id === layout)) return;
+  financeLayout = layout;
+  localStorage.setItem(FINANCE_LAYOUT_KEY, layout);
+  document.querySelectorAll('.fin-layout-menu.show').forEach(menu => menu.classList.remove('show'));
+  document.querySelectorAll('.fin-layout-btn[aria-expanded="true"]').forEach(button => button.setAttribute('aria-expanded', 'false'));
+  if (activeFinTab === 'investments') renderInvestments();
+  else renderLending();
+}
+
+function toggleFinanceLayoutMenu(button) {
+  if (!button) return;
+  const menu = button.parentElement.querySelector('.fin-layout-menu');
+  if (!menu) return;
+  const isOpen = menu.classList.toggle('show');
+  button.setAttribute('aria-expanded', String(isOpen));
+}
+
+function getFinanceLayoutLabel() {
+  return (FINANCE_LAYOUTS.find(option => option.id === financeLayout) || FINANCE_LAYOUTS[0]).label;
+}
+
+function getFinanceLayoutClass() {
+  return `fin-layout-${financeLayout}`;
+}
+
+function renderFinanceLayoutPicker() {
+  return `<div class="fin-layout-picker">
+    <button class="fin-layout-btn" onclick="toggleFinanceLayoutMenu(this)" title="Choose finance card layout" aria-label="Choose finance card layout" aria-expanded="false">▱</button>
+    <div class="dropdown-menu fin-layout-menu">
+      ${FINANCE_LAYOUTS.map(option => `<button class="dropdown-item ${option.id === financeLayout ? 'active' : ''}" onclick="setFinanceLayout('${option.id}')">
+        <span>${option.id === 'stacked-card' ? '▱' : option.id === 'detail-pager' ? '▤' : '▰'}</span>
+        <span>${escapeHtml(option.label)}</span>
+      </button>`).join('')}
+    </div>
+  </div>`;
 }
 
 
@@ -1578,6 +1965,15 @@ document.addEventListener('click', function(e) {
     mealLayoutMenu.classList.remove('show');
     mealLayoutBtn.setAttribute('aria-expanded', 'false');
   }
+
+  document.querySelectorAll('.fin-layout-picker').forEach(picker => {
+    if (!picker.contains(e.target)) {
+      const menu = picker.querySelector('.fin-layout-menu');
+      const button = picker.querySelector('.fin-layout-btn');
+      if (menu) menu.classList.remove('show');
+      if (button) button.setAttribute('aria-expanded', 'false');
+    }
+  });
 });
 
 // Plays the view-enter fade/slide animation on an element. Restarts cleanly even if the same
@@ -1667,7 +2063,7 @@ function renderRing(cfg) {
   const isMedium = cfg.size === 'medium';
   const showCenterText = isBig || isMedium;
   const clickable = !!cfg.metric;
-  const radius = isBig ? 76 : isMedium ? 58 : 40;
+  const radius = isBig ? 86 : isMedium ? 58 : 40;
   const stroke = isBig ? 12 : isMedium ? 10 : 7;
   const r = radius - stroke / 2;
   const circumference = 2 * Math.PI * r;
@@ -1752,6 +2148,8 @@ function renderDaily() {
   const proPct = t.protein > 0 ? Math.round((totals.protein / t.protein) * 100) : 0;
 
   let html = `
+    <div class="daily-swipe" id="dailySwipe">
+      <section class="daily-swipe-panel daily-overview-panel">
     <div class="date-nav">
       <button onclick="changeDate(-1)">◀</button>
       <div class="date-display">
@@ -1854,6 +2252,8 @@ function renderDaily() {
         </div>
       </div>`}
     </div>
+      </section>
+      <section class="daily-swipe-panel daily-meals-panel">
   `;
 
   // Backup Reminder
@@ -1865,8 +2265,211 @@ function renderDaily() {
   // Meals
   html += renderMealsSection(log);
 
+  html += `
+      </section>
+    </div>
+    <div class="daily-swipe-nav" id="dailySwipeNav" aria-label="Daily dashboard sections">
+      <button type="button" onclick="goToDailySwipePage(0)" title="Show Activity and Calories" aria-label="Show Activity and Calories">‹</button>
+      <span class="daily-swipe-label" id="dailySwipeLabel">Overview</span>
+      <div class="daily-swipe-dots">
+        <button type="button" class="daily-swipe-dot active" data-swipe-page="0" onclick="goToDailySwipePage(0)" aria-label="Overview" aria-current="true"></button>
+        <button type="button" class="daily-swipe-dot" data-swipe-page="1" onclick="goToDailySwipePage(1)" aria-label="Meals"></button>
+      </div>
+      <span class="daily-swipe-label" id="dailySwipeHint">Swipe for Meals</span>
+      <button type="button" onclick="goToDailySwipePage(1)" title="Show Quick Add and Meals" aria-label="Show Quick Add and Meals">›</button>
+    </div>`;
+
   document.getElementById('tab-daily').innerHTML = html;
   populateStylePicker();
+  setupDailySwipe();
+  setupSwipeDecks();
+}
+
+function goToDailySwipePage(page) {
+  const swipe = document.getElementById('dailySwipe');
+  if (!swipe) return;
+  dailySwipePage = Math.max(0, Math.min(1, Number(page) || 0));
+  swipe.scrollTo({ left: dailySwipePage * swipe.clientWidth, behavior: 'smooth' });
+}
+
+let dailySwipePage = 0;
+
+function setupDailySwipe() {
+  const swipe = document.getElementById('dailySwipe');
+  const nav = document.getElementById('dailySwipeNav');
+  if (!swipe || !nav) return;
+  const isMobile = window.matchMedia && window.matchMedia('(max-width: 600px)').matches;
+  if (!isMobile) {
+    swipe.style.height = '';
+    return;
+  }
+  const panels = swipe.querySelectorAll('.daily-swipe-panel');
+  const dots = nav.querySelectorAll('[data-swipe-page]');
+  const label = document.getElementById('dailySwipeLabel');
+  const hint = document.getElementById('dailySwipeHint');
+  const update = () => {
+    const page = swipe.clientWidth > 0 ? Math.round(swipe.scrollLeft / swipe.clientWidth) : 0;
+    dailySwipePage = page;
+    const activePanel = panels[page];
+    if (activePanel) swipe.style.height = `${activePanel.scrollHeight}px`;
+    dots.forEach(dot => {
+      const active = Number(dot.dataset.swipePage) === page;
+      dot.classList.toggle('active', active);
+      dot.setAttribute('aria-current', active ? 'true' : 'false');
+    });
+    if (label) label.textContent = page === 0 ? 'Overview' : 'Meals';
+    if (hint) hint.textContent = page === 0 ? 'Swipe for Meals' : 'Swipe for Overview';
+  };
+  if (dailySwipePage > 0) swipe.scrollLeft = dailySwipePage * swipe.clientWidth;
+  swipe.addEventListener('scroll', update, { passive: true });
+  update();
+}
+
+function setupSwipeDecks() {
+  document.querySelectorAll('[data-swipe-deck]').forEach(deck => {
+    const cards = Array.from(deck.children).filter(card =>
+      card.matches('.loan-card, .inv-card, .meal-section')
+    );
+    if (cards.length === 0) return;
+
+    const isPager = deck.classList.contains('fin-layout-detail-pager');
+    const isDeepStack = deck.classList.contains('fin-layout-stacked-swipe') || deck.dataset.swipeDeck === 'meals';
+    const state = { index: 0, startX: 0, startY: 0, dragX: 0, dragging: false, locked: false, input: null };
+
+    const render = (dragX = 0) => {
+      const stepX = isPager ? 0 : isDeepStack ? 20 : 16;
+      const stepY = isPager ? 0 : isDeepStack ? 15 : 12;
+      cards.forEach((card, index) => {
+        const relative = (index - state.index + cards.length) % cards.length;
+        if (relative > 2) {
+          card.style.opacity = '0';
+          card.style.pointerEvents = 'none';
+          card.style.zIndex = '0';
+          card.style.transform = 'translate3d(0,18px,0) scale(.88)';
+          return;
+        }
+        const cardDrag = relative === 0 ? dragX : 0;
+        const baseRotation = isPager ? 0 : relative === 0 ? 0 : (relative % 2 ? -2 : 2);
+        const rotation = relative === 0 ? baseRotation + cardDrag / 18 : baseRotation;
+        const scale = isPager ? (relative === 0 ? 1 : 0.97) : 1 - relative * 0.045;
+        card.style.opacity = relative === 0 ? '1' : relative === 1 ? '0.76' : '0.48';
+        card.style.pointerEvents = relative === 0 ? 'auto' : 'none';
+        card.style.zIndex = String(cards.length - relative);
+        card.style.transform = `translate3d(${relative * stepX + cardDrag}px,${relative * stepY}px,0) rotate(${rotation}deg) scale(${scale})`;
+      });
+    };
+
+    const resetDrag = () => {
+      state.dragging = false;
+      state.dragX = 0;
+      state.input = null;
+      deck.classList.remove('is-dragging');
+    };
+
+    const advance = direction => {
+      if (state.locked) return;
+      const front = cards[state.index];
+      state.locked = true;
+      front.style.pointerEvents = 'none';
+      front.style.transform = `translate3d(${direction * deck.clientWidth * 1.2}px,-10px,0) rotate(${direction * 16}deg)`;
+      front.style.opacity = '0';
+      window.setTimeout(() => {
+        state.index = (state.index + (direction < 0 ? 1 : -1) + cards.length) % cards.length;
+        state.locked = false;
+        render(0);
+      }, 300);
+    };
+
+    const beginDrag = (x, y, input) => {
+      if (state.locked) return;
+      state.startX = x;
+      state.startY = y;
+      state.dragX = 0;
+      state.input = input;
+      state.dragging = true;
+      deck.classList.add('is-dragging');
+    };
+
+    const moveDrag = (x, y, event, input) => {
+      if (!state.dragging || state.locked || state.input !== input) return;
+      const dx = x - state.startX;
+      const dy = y - state.startY;
+      if (Math.abs(dx) > Math.abs(dy) + 4) {
+        state.dragX = dx;
+        render(dx);
+        if (event && event.cancelable) event.preventDefault();
+      }
+    };
+
+    const endDrag = (x, input) => {
+      if (!state.dragging || state.locked || state.input !== input) return;
+      const dx = x - state.startX;
+      const threshold = Math.max(45, deck.clientWidth * 0.14);
+      resetDrag();
+      if (Math.abs(dx) < threshold) {
+        render(0);
+        return;
+      }
+      advance(dx < 0 ? -1 : 1);
+    };
+
+    const onPointerDown = event => {
+      if (event.pointerType === 'touch' || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      beginDrag(event.clientX, event.clientY, 'pointer');
+      if (deck.setPointerCapture) deck.setPointerCapture(event.pointerId);
+    };
+    const onPointerMove = event => {
+      if (event.pointerType === 'touch') return;
+      moveDrag(event.clientX, event.clientY, event, 'pointer');
+    };
+    const onPointerUp = event => {
+      if (event.pointerType === 'touch') return;
+      endDrag(event.clientX, 'pointer');
+    };
+    const onPointerCancel = event => {
+      if (event.pointerType === 'touch' || state.input !== 'pointer') return;
+      resetDrag();
+      render(0);
+    };
+
+    const getTouch = event => event.touches[0] || event.changedTouches[0];
+    const onTouchStart = event => {
+      if (state.input === 'pointer') return;
+      const touch = getTouch(event);
+      if (touch) beginDrag(touch.clientX, touch.clientY, 'touch');
+    };
+    const onTouchMove = event => {
+      if (state.input !== 'touch' || !event.touches[0]) return;
+      const touch = event.touches[0];
+      moveDrag(touch.clientX, touch.clientY, event, 'touch');
+    };
+    const onTouchEnd = event => {
+      if (state.input !== 'touch') return;
+      const touch = getTouch(event);
+      if (touch) endDrag(touch.clientX, 'touch');
+    };
+    const onTouchCancel = () => {
+      if (state.input !== 'touch') return;
+      resetDrag();
+      render(0);
+    };
+    const onKeyDown = event => {
+      if (event.key === 'ArrowLeft') { event.preventDefault(); advance(-1); }
+      if (event.key === 'ArrowRight') { event.preventDefault(); advance(1); }
+    };
+
+    deck.tabIndex = 0;
+    deck.addEventListener('pointerdown', onPointerDown);
+    deck.addEventListener('pointermove', onPointerMove, { passive: false });
+    deck.addEventListener('pointerup', onPointerUp);
+    deck.addEventListener('pointercancel', onPointerCancel);
+    deck.addEventListener('touchstart', onTouchStart, { passive: true });
+    deck.addEventListener('touchmove', onTouchMove, { passive: false });
+    deck.addEventListener('touchend', onTouchEnd, { passive: true });
+    deck.addEventListener('touchcancel', onTouchCancel, { passive: true });
+    deck.addEventListener('keydown', onKeyDown);
+    render(0);
+  });
 }
 
 const MEAL_NAMES = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
@@ -1882,7 +2485,7 @@ function renderMealLayoutPicker() {
     <button class="meal-layout-btn" id="mealLayoutBtn" onclick="toggleMealLayoutMenu()" title="Choose meal layout" aria-label="Choose meal layout" aria-expanded="false">☰</button>
     <div class="dropdown-menu meal-layout-menu" id="mealLayoutMenu">
       ${MEAL_LAYOUTS.map(option => `<button class="dropdown-item ${option.id === mealLayout ? 'active' : ''}" onclick="setMealLayout('${option.id}')">
-        <span>${option.id === 'loseit' ? '◉' : option.id === 'yazio' ? '◈' : option.id === 'lifesum' ? '●' : '⚡'}</span>
+        <span>${option.id === 'loseit' ? '◉' : option.id === 'yazio' ? '◈' : option.id === 'lifesum' ? '●' : option.id === 'stacked-swipe' ? '▰' : '⚡'}</span>
         <span>${escapeHtml(option.label)}</span>
       </button>`).join('')}
     </div>
@@ -1978,12 +2581,25 @@ function renderOneTapMeals(log) {
   }).join('')}</div>`;
 }
 
+function renderStackedSwipeMeals(log) {
+  return `<div class="meal-layout meal-layout-stacked-swipe" data-swipe-deck="meals">${log.meals.map((meal, mealIdx) => {
+    const totals = calcMealTotals(meal);
+    return `<div class="meal-section">
+      <div class="meal-header"><span><strong>${MEAL_ICONS[mealIdx]} ${MEAL_NAMES[mealIdx]}</strong><br><span class="meal-food-meta">${meal.length} ${meal.length === 1 ? 'item' : 'items'}</span></span><span class="meal-food-meta">${formatMealNumber(totals.cal)} kcal</span></div>
+      <div class="macroline"><span>P: <b>${formatMealNumber(totals.protein)}g</b></span><span>C: <b>${formatMealNumber(totals.carbs)}g</b></span><span>F: <b>${formatMealNumber(totals.fat)}g</b></span><span>Fib: <b>${formatMealNumber(totals.fibre)}g</b></span></div>
+      <div class="meal-items">${renderMealItems(meal, mealIdx)}</div>
+      ${renderMealActions(mealIdx)}
+    </div>`;
+  }).join('')}</div><div class="meal-deck-hint">Swipe left or right to browse Breakfast, Lunch, Snack, and Dinner</div>`;
+}
+
 function renderMealsSection(log) {
   const renderers = {
     loseit: renderLoseItMeals,
     yazio: renderYazioMeals,
     lifesum: renderLifesumMeals,
-    onetap: renderOneTapMeals
+    onetap: renderOneTapMeals,
+    'stacked-swipe': renderStackedSwipeMeals
   };
   const content = (renderers[mealLayout] || renderLoseItMeals)(log);
   return `<div class="card meals-card">
@@ -2596,6 +3212,135 @@ function initialsOf(name) {
 
 // Which loan group is shown: all | due | advance | cleared
 let loanFilter = 'all';
+let loanSearch = '';
+let showLoanSearch = false;
+let showLoanSort = false;
+let investmentFilter = 'all';
+let investmentSearch = '';
+let showInvestmentSearch = false;
+let showInvestmentSort = false;
+let investmentSort = 'current';
+let investmentSortDir = 'desc';
+const INVESTMENT_SORT_DEFAULT_DIR = { name: 'asc', current: 'desc', invested: 'desc', gain: 'desc', return: 'desc' };
+const INVESTMENT_SORT_OPTIONS = [
+  ['name', 'Name'],
+  ['current', 'Current value'],
+  ['invested', 'Invested amount'],
+  ['gain', 'Gain / loss'],
+  ['return', 'Return %']
+];
+
+function restoreFinanceSearchFocus(id) {
+  requestAnimationFrame(() => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  });
+}
+
+function setLoanSearch(value) {
+  loanSearch = String(value || '');
+  renderLending();
+  restoreFinanceSearchFocus('loanSearch');
+}
+
+function toggleLoanSearch() {
+  showLoanSearch = !showLoanSearch;
+  if (showLoanSearch) showLoanSort = false;
+  renderLending();
+  if (showLoanSearch) restoreFinanceSearchFocus('loanSearch');
+}
+
+function toggleLoanSort() {
+  showLoanSort = !showLoanSort;
+  if (showLoanSort) showLoanSearch = false;
+  renderLending();
+}
+
+function setInvestmentSearch(value) {
+  investmentSearch = String(value || '');
+  renderInvestments();
+  restoreFinanceSearchFocus('investmentSearch');
+}
+
+function toggleInvestmentSearch() {
+  showInvestmentSearch = !showInvestmentSearch;
+  if (showInvestmentSearch) showInvestmentSort = false;
+  renderInvestments();
+  if (showInvestmentSearch) restoreFinanceSearchFocus('investmentSearch');
+}
+
+function toggleInvestmentSort() {
+  showInvestmentSort = !showInvestmentSort;
+  if (showInvestmentSort) showInvestmentSearch = false;
+  renderInvestments();
+}
+
+function setInvestmentFilter(filter) {
+  investmentFilter = filter;
+  renderInvestments();
+}
+
+function setInvestmentSort(sort) {
+  investmentSort = sort;
+  investmentSortDir = INVESTMENT_SORT_DEFAULT_DIR[sort] || 'desc';
+  renderInvestments();
+}
+
+function toggleInvestmentSortDir() {
+  investmentSortDir = investmentSortDir === 'asc' ? 'desc' : 'asc';
+  renderInvestments();
+}
+
+function investmentComparator(a, b) {
+  const flip = investmentSortDir === 'desc' ? -1 : 1;
+  const investedA = Number(a.invested) || 0, investedB = Number(b.invested) || 0;
+  const currentA = Number(a.current) || 0, currentB = Number(b.current) || 0;
+  const gainA = currentA - investedA, gainB = currentB - investedB;
+  const returnA = investedA > 0 ? gainA / investedA * 100 : 0;
+  const returnB = investedB > 0 ? gainB / investedB * 100 : 0;
+  switch (investmentSort) {
+    case 'name': return flip * String(a.name).localeCompare(String(b.name));
+    case 'invested': return flip * (investedA - investedB);
+    case 'gain': return flip * (gainA - gainB);
+    case 'return': return flip * (returnA - returnB);
+    case 'current':
+    default: return flip * (currentA - currentB);
+  }
+}
+
+function renderFinanceToolButtons(type) {
+  const isLoan = type === 'loan';
+  const searchOpen = isLoan ? showLoanSearch : showInvestmentSearch;
+  const sortOpen = isLoan ? showLoanSort : showInvestmentSort;
+  return `<div class="fin-tool-buttons">
+    <button class="fin-tool-btn ${searchOpen ? 'active' : ''}" onclick="${isLoan ? 'toggleLoanSearch()' : 'toggleInvestmentSearch()'}" title="Search ${isLoan ? 'borrowers' : 'investments'}" aria-label="Search ${isLoan ? 'borrowers' : 'investments'}">🔍</button>
+    <button class="fin-tool-btn ${sortOpen ? 'active' : ''}" onclick="${isLoan ? 'toggleLoanSort()' : 'toggleInvestmentSort()'}" title="Sort ${isLoan ? 'loans' : 'investments'}" aria-label="Sort ${isLoan ? 'loans' : 'investments'}">↕</button>
+  </div>`;
+}
+
+function renderFinanceToolsPanel(type) {
+  const isLoan = type === 'loan';
+  let html = '';
+  if (isLoan && showLoanSearch) {
+    html += `<div class="fin-tools-panel"><input id="loanSearch" type="search" value="${escapeHtml(loanSearch)}" placeholder="Search borrower name..." oninput="setLoanSearch(this.value)"><button class="fin-tool-clear" onclick="setLoanSearch('')" title="Clear search">✕</button></div>`;
+  }
+  if (!isLoan && showInvestmentSearch) {
+    html += `<div class="fin-tools-panel"><input id="investmentSearch" type="search" value="${escapeHtml(investmentSearch)}" placeholder="Search fund or stock name..." oninput="setInvestmentSearch(this.value)"><button class="fin-tool-clear" onclick="setInvestmentSearch('')" title="Clear search">✕</button></div>`;
+  }
+  if (isLoan && showLoanSort) {
+    const options = [['name', 'Name'], ['amount', 'Amount'], ['interest-due', 'Interest due'], ['overdue-first', 'Overdue first'], ['date', 'Loan date']];
+    const reversible = loanSort !== 'overdue-first';
+    html += `<div class="fin-tools-panel"><select class="fin-sort" title="Sort loans by" onchange="setLoanSort(this.value)">${options.map(([key, label]) => `<option value="${key}" ${loanSort === key ? 'selected' : ''}>${label}</option>`).join('')}</select><button class="fin-sort-dir ${reversible ? '' : 'disabled'}" title="Reverse loan sort" onclick="${reversible ? 'toggleLoanSortDir()' : ''}" ${reversible ? '' : 'disabled'}>${loanSortDir === 'desc' ? '↓' : '↑'}</button></div>`;
+  }
+  if (!isLoan && showInvestmentSort) {
+    const reversible = true;
+    html += `<div class="fin-tools-panel"><select class="fin-sort" title="Sort investments by" onchange="setInvestmentSort(this.value)">${INVESTMENT_SORT_OPTIONS.map(([key, label]) => `<option value="${key}" ${investmentSort === key ? 'selected' : ''}>${label}</option>`).join('')}</select><button class="fin-sort-dir" title="Reverse investment sort" onclick="toggleInvestmentSortDir()">${investmentSortDir === 'desc' ? '↓' : '↑'}</button></div>`;
+  }
+  return html;
+}
+
 function setLoanFilter(f) {
   loanFilter = f;
   renderLending();
@@ -2900,7 +3645,11 @@ function renderLending() {
 
     <div class="fin-sec-head">
       <h3>🤝 Loans</h3>
-      <button class="fin-ghost-btn" onclick="toggleAddLoan()">${showAddLoan ? '✕ Cancel' : '＋ New loan'}</button>
+      <div class="fin-sec-actions">
+        ${renderFinanceToolButtons('loan')}
+        ${renderFinanceLayoutPicker()}
+        <button class="fin-ghost-btn" onclick="toggleAddLoan()">${showAddLoan ? '✕ Cancel' : '＋ New loan'}</button>
+      </div>
     </div>`;
 
   // Add-loan form stays collapsed so the loan list is what you see first.
@@ -2930,39 +3679,13 @@ function renderLending() {
       ['advance', 'Advance ' + advCount],
       ['cleared', 'Cleared ' + clearedCount]
     ];
-    // One dropdown entry per sort key (down from 7). "Name", "Amount", "Interest due" and
-    // "Loan date" are all reversible -- the small arrow button next to the dropdown flips the
-    // active key's direction. A plain <select> can't detect re-selecting its current value
-    // (browsers don't fire `change` for that), so direction lives on its own control instead.
-    const sortOptions = [
-      ['name', 'Name'],
-      ['amount', 'Amount'],
-      ['interest-due', 'Interest due'],
-      ['overdue-first', 'Overdue first'],
-      ['date', 'Loan date']
-    ];
-    const reversible = loanSort !== 'overdue-first';
-    const dirLabels = {
-      name: ['A→Z', 'Z→A'], amount: ['Low→High', 'High→Low'],
-      'interest-due': ['Low→High', 'High→Low'], date: ['Oldest first', 'Newest first']
-    };
-    const dirTitle = reversible
-      ? `Currently: ${dirLabels[loanSort][loanSortDir === 'desc' ? 1 : 0]}. Click to reverse.`
-      : 'This sort has no direction to reverse';
     html += `<div class="fin-filters">` + filters.map(([key, label]) =>
       `<button class="fin-filter ${loanFilter === key ? 'active' : ''}" onclick="setLoanFilter('${key}')">${label}</button>`
-    ).join('') +
-      `<select class="fin-sort" title="Sort loans by" onchange="setLoanSort(this.value)">` +
-      sortOptions.map(([key, label]) =>
-        `<option value="${key}" ${loanSort === key ? 'selected' : ''}>${label}</option>`
-      ).join('') +
-      `</select>` +
-      `<button class="fin-sort-dir ${reversible ? '' : 'disabled'}" title="${dirTitle}"
-        onclick="${reversible ? 'toggleLoanSortDir()' : ''}" ${reversible ? '' : 'disabled'}>
-        ${loanSortDir === 'desc' ? '↓' : '↑'}
-      </button></div>`;
+    ).join('') + `</div>`;
+    html += renderFinanceToolsPanel('loan');
 
     const visible = loans.filter(l => {
+      if (loanSearch && !String(l.borrower || '').toLowerCase().includes(loanSearch.toLowerCase())) return false;
       const c = calcs[l.id];
       if (loanFilter === 'due') return c.overdue;
       if (loanFilter === 'advance') return c.interestAdvance > 0.01;
@@ -2978,6 +3701,9 @@ function renderLending() {
       </div>`;
     }
 
+    if (visible.length > 0) {
+      html += `<div class="fin-card-layout ${getFinanceLayoutClass()}" data-swipe-deck="finance">`;
+    }
     visible.forEach(loan => {
       const c = calcs[loan.id];
       const settled = c.outstandingPrincipal <= 0.01;
@@ -3184,9 +3910,14 @@ function renderLending() {
 
       html += `</div>`; // end loan card
     });
+    if (visible.length > 0) {
+      html += `</div>`;
+      html += `<div class="fin-deck-hint">Swipe left or right to browse ${visible.length} loans</div>`;
+    }
   }
 
   document.getElementById('fintab-lending').innerHTML = html;
+  setupSwipeDecks();
 }
 
 function addLoan() {
@@ -3347,7 +4078,11 @@ function renderInvestments() {
 
     <div class="fin-sec-head">
       <h3>💼 Holdings</h3>
-      <button class="fin-ghost-btn" onclick="toggleAddInvestment()">${showAddInvestment ? '✕ Cancel' : '＋ New holding'}</button>
+      <div class="fin-sec-actions">
+        ${renderFinanceToolButtons('investment')}
+        ${renderFinanceLayoutPicker()}
+        <button class="fin-ghost-btn" onclick="toggleAddInvestment()">${showAddInvestment ? '✕ Cancel' : '＋ New holding'}</button>
+      </div>
     </div>`;
 
   if (showAddInvestment) {
@@ -3375,8 +4110,32 @@ function renderInvestments() {
       <div class="e-sub">Add a mutual fund, stock or ETF to track how it is doing.</div>
     </div>`;
   } else {
-    // Largest holdings first, so the portfolio's weighting is obvious at a glance.
-    const sorted = inv.slice().sort((a, b) => (Number(b.current) || 0) - (Number(a.current) || 0));
+    const investmentFilters = [
+      ['all', 'All'],
+      ['Mutual Fund', 'Mutual Funds'],
+      ['Stock', 'Stocks'],
+      ['ETF', 'ETFs'],
+      ['Other', 'Others']
+    ];
+    html += `<div class="fin-filters">` + investmentFilters.map(([key, label]) =>
+      `<button class="fin-filter ${investmentFilter === key ? 'active' : ''}" onclick="setInvestmentFilter('${key}')">${label}</button>`
+    ).join('') + `</div>`;
+    html += renderFinanceToolsPanel('investment');
+
+    const sorted = inv.filter(item => {
+      if (investmentSearch && !String(item.name || '').toLowerCase().includes(investmentSearch.toLowerCase())) return false;
+      if (investmentFilter !== 'all' && item.type !== investmentFilter) return false;
+      return true;
+    }).sort(investmentComparator);
+    if (sorted.length === 0) {
+      html += `<div class="fin-empty">
+        <div class="e-icon">🔍</div>
+        <div class="e-title">No matching investments</div>
+        <div class="e-sub">Try another name or investment type.</div>
+      </div>`;
+    } else {
+      // Holdings are ordered by the selected sort control before being rendered into the deck.
+    html += `<div class="fin-card-layout ${getFinanceLayoutClass()}" data-swipe-deck="finance">`;
     sorted.forEach(i => {
       const invested = Number(i.invested) || 0;
       const current = Number(i.current) || 0;
@@ -3411,9 +4170,12 @@ function renderInvestments() {
         </div>
       </div>`;
     });
+    html += `<div class="fin-deck-hint">Swipe left or right to browse ${sorted.length} holdings</div></div>`;
+    }
   }
 
   document.getElementById('fintab-investments').innerHTML = html;
+  setupSwipeDecks();
 }
 
 function addInvestment() {
