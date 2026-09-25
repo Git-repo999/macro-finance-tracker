@@ -556,52 +556,47 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
   .activity-calendar-month-picker { font-size: .66rem; max-width: 125px; }
 }
 
-/* Mobile top region: keep the module header + date/week selector visible while the
-   content below them scrolls. This avoids iOS standalone sticky/safe-area overlap. */
-@media (max-width:600px) {
-  .module-header {
-    position: sticky;
-    top: env(safe-area-inset-top, 0px);
-    z-index: 100;
-    background: var(--bg-primary);
-    box-sizing: border-box;
-    margin-left: -1px;
-    margin-right: -1px;
-    padding-top: 4px;
-  }
-  .selector-fixed-bar {
-    position: sticky;
-    top: calc(env(safe-area-inset-top, 0px) + 48px);
-    z-index: 90;
-    background: var(--bg-primary);
-    box-sizing: border-box;
-    width: 100%;
-    padding-top: 4px;
-    padding-bottom: 4px;
-  }
-  .selector-fixed-bar .daily-date-nav,
-  .selector-fixed-bar .weekly-date-nav,
-  .selector-fixed-bar .progress-week-nav {
-    position: relative !important;
-    top: auto !important;
-    z-index: 91;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    border-radius: 12px;
-    box-shadow: 0 6px 18px rgba(0,0,0,.18);
-    box-sizing: border-box;
-    margin: 0;
-  }
-  .selector-fixed-bar .date-display { background: var(--bg-card); }
+.selector-fixed-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--bg-primary);
+  box-sizing: border-box;
+  width: 100%;
 }
+.selector-fixed-bar .daily-date-nav,
+.selector-fixed-bar .weekly-date-nav,
+.selector-fixed-bar .progress-week-nav {
+  position: relative !important;
+  top: auto !important;
+  z-index: 41;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.18);
+  box-sizing: border-box;
+  margin: 0 0 12px;
+}
+.selector-fixed-bar .date-display { background: var(--bg-card); }
 
-/* In standalone/iOS Home Screen mode the fixed top region has a solid safe-area cap.
-   The cap belongs to the header, not the selector, so it never covers the menu/title. */
-@media (display-mode: standalone) and (max-width:600px) {
-  .module-header {
+/* The safe-area blackout is only visible after the selector bar has pinned.
+   47px is approximately the iPhone 13 Face ID top safe area. */
+@media (display-mode: standalone) {
+  .selector-fixed-bar.is-stuck {
+    margin-top: 0;
+    padding-top: 47px;
     background: var(--bg-primary);
-    padding-top: 4px;
+  }
+  .selector-fixed-bar.is-stuck::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 47px;
+    background: var(--bg-primary);
+    pointer-events: none;
   }
 }
 </style>
@@ -3407,30 +3402,26 @@ function setProgressMode(metric, mode) {
 }
 
 
-function renderActivityCalendar(monthDate) {
+function renderActivityCalendar(monthDate, type) {
   const y = monthDate.getFullYear(), m = monthDate.getMonth();
   const first = new Date(y,m,1), daysInMonth = new Date(y,m+1,0).getDate();
   const start = (first.getDay()+6)%7; // Monday-first
   const monthValue = `${y}-${String(m+1).padStart(2,'0')}`;
+  const icon = type === 'gym' ? '💪' : '🏃';
+  const title = type === 'gym' ? 'Weight Training' : 'Cardio';
   let html = `<div class="activity-calendar">
     <div class="activity-calendar-title">
-      <span>🏋️ Activity</span>
-      <input class="activity-calendar-month-picker" type="month" value="${monthValue}" onchange="changeActivityCalendarMonth(this.value)" aria-label="Select activity calendar month">
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;margin:-2px 0 7px;font-size:.62rem;color:var(--text-secondary);">
-      <span>💪 Weight Training</span><span>🏃 Cardio</span>
+      <span>${icon} ${title}</span>
+      <input class="activity-calendar-month-picker" type="month" value="${monthValue}" onchange="changeActivityCalendarMonth('${type}', this.value)" aria-label="Select month for ${title}">
     </div>
     <div class="activity-calendar-week">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<span>${d}</span>`).join('')}</div>
     <div class="activity-calendar-week">`;
   for(let i=0;i<start;i++) html += '<span class="activity-day empty"></span>';
   for(let day=1;day<=daysInMonth;day++) {
     const dt = new Date(y,m,day), ds = dt.toISOString().split('T')[0], log=state.dailyLogs[ds];
-    const gym = !!(log && log.activity && log.activity.gym);
-    const cardio = !!(log && log.activity && log.activity.cardio);
-    const active = gym || cardio;
+    const active = !!(log && log.activity && (type==='gym' ? log.activity.gym : log.activity.cardio));
     const today = ds === new Date().toISOString().split('T')[0];
-    const symbols = `${gym ? '<span class="activity-symbol">💪</span>' : ''}${cardio ? '<span class="activity-symbol">🏃</span>' : ''}`;
-    html += `<span class="activity-day ${active?'active':''} ${today?'today':''}" onclick="setDateFromProgressCalendar('${ds}')"><span>${day}</span>${symbols}</span>`;
+    html += `<span class="activity-day ${active?'active':''} ${today?'today':''}" onclick="setDateFromProgressCalendar('${ds}')"><span>${day}</span>${active?`<span class="activity-symbol">${icon}</span>`:''}</span>`;
     if((start+day)%7===0 && day<daysInMonth) html += '</div><div class="activity-calendar-week">';
   }
   const totalCells=start+daysInMonth, trailing=(7-totalCells%7)%7;
@@ -3438,13 +3429,31 @@ function renderActivityCalendar(monthDate) {
   html += '</div></div>';
   return html;
 }
-function changeActivityCalendarMonth(value) {
+function changeActivityCalendarMonth(type, value) {
   if(!value) return;
   const [y,m] = value.split('-').map(Number);
   if(!y || !m) return;
+  const selectedDate = new Date(y, m-1, 1);
   const grid = document.querySelector('.activity-calendar-grid');
   if(!grid) return;
-  grid.innerHTML = `<div class="card activity-calendar-card">${renderActivityCalendar(new Date(y,m-1,1))}</div>`;
+
+  // Always keep the calendars in a fixed order: Weight Training first, Cardio second.
+  // Changing either calendar's month must never change their positions.
+  const getMonthFromPicker = calendarType => {
+    const picker = grid.querySelector(`.activity-calendar input[onchange*="'${calendarType}'"]`);
+    if(!picker || !picker.value) return null;
+    const [py, pm] = picker.value.split('-').map(Number);
+    return py && pm ? new Date(py, pm-1, 1) : null;
+  };
+
+  let gymMonth = getMonthFromPicker('gym');
+  let cardioMonth = getMonthFromPicker('cardio');
+  if(type === 'gym') gymMonth = selectedDate;
+  if(type === 'cardio') cardioMonth = selectedDate;
+  gymMonth = gymMonth || selectedDate;
+  cardioMonth = cardioMonth || selectedDate;
+
+  grid.innerHTML = renderActivityCalendar(gymMonth, 'gym') + renderActivityCalendar(cardioMonth, 'cardio');
 }
 function setDateFromProgressCalendar(ds) { state.currentDate=ds; renderProgress(); }
 
@@ -3496,7 +3505,8 @@ function renderProgress() {
       </div>
     </div>
     <div class="activity-calendar-grid">
-      <div class="card activity-calendar-card">${renderActivityCalendar(new Date(monday))}</div>
+      <div class="card activity-calendar-card">${renderActivityCalendar(new Date(monday), 'gym')}</div>
+      <div class="card activity-calendar-card">${renderActivityCalendar(new Date(monday), 'cardio')}</div>
     </div>
     ${chartCard('steps','👟','Steps','Steps recorded')}
     ${chartCard('calories','🔥','Calories','Calories consumed (kcal)')}
