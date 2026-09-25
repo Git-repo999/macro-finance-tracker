@@ -567,20 +567,30 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 #tab-progress .progress-week-nav .date-display { background: var(--bg-card); }
 
 /* Daily and Weekly date navigation: keep the selector visible while scrolling,
-   matching the Progress page behaviour. The solid background prevents content showing through. */
+   matching the Progress page behaviour. The solid background prevents content showing through.
+   In iOS Home Screen/standalone mode, reserve the top safe-area so the camera/Dynamic Island
+   never overlaps the sticky navigation. */
 .daily-date-nav,
 .weekly-date-nav {
   position: sticky;
-  top: 0;
+  top: env(safe-area-inset-top, 0px);
   z-index: 20;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
   border-radius: 12px;
   box-shadow: 0 6px 18px rgba(0,0,0,.18);
+  box-sizing: border-box;
+  margin-top: 0;
 }
 .daily-date-nav .date-display,
 .weekly-date-nav .date-display { background: var(--bg-card); }
+@supports (padding-top: env(safe-area-inset-top)) {
+  .daily-date-nav,
+  .weekly-date-nav {
+    margin-top: 0;
+  }
+}
 #tab-progress .progress-chart .label { font-size: 9px; }
 </style>
 </head>
@@ -1278,7 +1288,9 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .fin-form input, .fin-form select {
   padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border);
   background: var(--bg-card); color: var(--text-primary); font-size: 0.85rem; width: 100%;
+  min-width: 0; box-sizing: border-box;
 }
+.fin-form > * { min-width: 0; box-sizing: border-box; }
 .fin-form input:focus, .fin-form select:focus { outline: none; border-color: var(--accent); }
 .fin-entry { border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin: 10px 0; background: var(--bg-card); }
 .fin-entry-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
@@ -1584,6 +1596,8 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .add-pay-btn:hover { background: var(--accent-glow); }
 
 @media (max-width: 600px) {
+  .fin-form { grid-template-columns: minmax(0, 1fr); width: 100%; }
+  .fin-form input, .fin-form select { min-width: 0; max-width: 100%; }
   .fin-table { font-size: 0.72rem; }
   .fin-table th, .fin-table td { padding: 6px 3px; }
   .fin-hero { padding: 15px; }
