@@ -566,12 +566,12 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 }
 #tab-progress .progress-week-nav .date-display { background: var(--bg-card); }
 
-/* Daily and Weekly date navigation: keep the selector visible while scrolling,
-   matching the Progress page behaviour. The solid background prevents content showing through.
-   In iOS Home Screen/standalone mode, reserve the top safe-area so the camera/Dynamic Island
-   never overlaps the sticky navigation. */
+/* Sticky Nutrition/Progress selectors: fully opaque, with a solid theme-colored safe-area
+   cap in iOS Home Screen/standalone mode so the camera/Dynamic Island area never reveals the
+   content that is scrolling underneath. */
 .daily-date-nav,
-.weekly-date-nav {
+.weekly-date-nav,
+#tab-progress .progress-week-nav {
   position: sticky;
   top: env(safe-area-inset-top, 0px);
   z-index: 20;
@@ -581,15 +581,23 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
   border-radius: 12px;
   box-shadow: 0 6px 18px rgba(0,0,0,.18);
   box-sizing: border-box;
-  margin-top: 0;
+}
+.daily-date-nav::before,
+.weekly-date-nav::before,
+#tab-progress .progress-week-nav::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  right: -1px;
+  bottom: 100%;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--bg-primary);
+  pointer-events: none;
 }
 .daily-date-nav .date-display,
-.weekly-date-nav .date-display { background: var(--bg-card); }
-@supports (padding-top: env(safe-area-inset-top)) {
-  .daily-date-nav,
-  .weekly-date-nav {
-    margin-top: 0;
-  }
+.weekly-date-nav .date-display,
+#tab-progress .progress-week-nav .date-display {
+  background: var(--bg-card);
 }
 #tab-progress .progress-chart .label { font-size: 9px; }
 </style>
@@ -1596,8 +1604,18 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .add-pay-btn:hover { background: var(--accent-glow); }
 
 @media (max-width: 600px) {
-  .fin-form { grid-template-columns: minmax(0, 1fr); width: 100%; }
-  .fin-form input, .fin-form select { min-width: 0; max-width: 100%; }
+  .fin-panel { overflow: hidden; }
+  .fin-form { grid-template-columns: minmax(0, 1fr); width: 100%; min-width: 0; }
+  .fin-form input, .fin-form select { min-width: 0; max-width: 100%; width: 100%; }
+  .fin-form input[type="date"] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+  }
   .fin-table { font-size: 0.72rem; }
   .fin-table th, .fin-table td { padding: 6px 3px; }
   .fin-hero { padding: 15px; }
@@ -2480,7 +2498,7 @@ function renderDaily() {
 
     <!-- Activity Tracker -->
     <div class="card">
-      <h3>🏋️ Activity Tracker</h3>
+      <h3>🏋️ Activity</h3>
       <div class="activity-row">
         <label class="activity-toggle ${log.activity.gym ? 'checked' : ''}">
           <input type="checkbox" id="gymCheck" ${log.activity.gym ? 'checked' : ''} onchange="updateActivity('gym', this.checked)">
