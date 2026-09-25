@@ -566,9 +566,9 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 }
 #tab-progress .progress-week-nav .date-display { background: var(--bg-card); }
 
-/* Sticky Nutrition/Progress selectors: fully opaque, with a solid theme-colored safe-area
-   cap in iOS Home Screen/standalone mode so the camera/Dynamic Island area never reveals the
-   content that is scrolling underneath. */
+/* Sticky Nutrition/Progress selectors. Keep the selector fully opaque without a permanent
+   cap above it, because that cap covered the menu/heading at the top of the page.
+   A ~1 mm top shadow provides the blackout when the selector is against the top edge. */
 .daily-date-nav,
 .weekly-date-nav,
 #tab-progress .progress-week-nav {
@@ -579,27 +579,14 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
   border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.18);
+  box-shadow: 0 -4px 0 var(--bg-primary), 0 6px 18px rgba(0,0,0,.18);
   box-sizing: border-box;
-}
-.daily-date-nav::before,
-.weekly-date-nav::before,
-#tab-progress .progress-week-nav::before {
-  content: '';
-  position: absolute;
-  left: -3px;
-  right: -1px;
-  bottom: 100%;
-  height: env(safe-area-inset-top, 0px);
-  background: var(--bg-primary);
-  pointer-events: none;
 }
 .daily-date-nav .date-display,
 .weekly-date-nav .date-display,
 #tab-progress .progress-week-nav .date-display {
   background: var(--bg-card);
 }
-#tab-progress .progress-chart .label { font-size: 9px; }
 </style>
 </head>
 <body>
@@ -977,7 +964,7 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
     align-items: stretch;
     width: 100%;
     overflow-x: auto;
-    overflow-y: clip;
+    overflow-y: visible;
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     overscroll-behavior-x: contain;
@@ -989,10 +976,10 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
     flex: 0 0 100%;
     width: 100%;
     min-width: 100%;
-    height: 100%;
-    overflow-y: auto;
-    overscroll-behavior-y: contain;
-    -webkit-overflow-scrolling: touch;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    overscroll-behavior-y: auto;
     scroll-snap-align: start;
     scroll-snap-stop: always;
     padding: 0 1px;
