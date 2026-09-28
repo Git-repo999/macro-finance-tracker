@@ -666,6 +666,177 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
   #module-macro, #tab-daily, #tab-weekly, #tab-progress { overflow: visible !important; }
 }
 </style>
+
+<style id="finance-mobile-fixed-header-v1">
+@media (max-width:600px) {
+  /* Keep the Personal Finances title row pinned exactly like Nutrition. */
+  #module-finance > .module-header {
+    position: sticky !important;
+    top: calc(var(--top-safe) + var(--app-header-height)) !important;
+    z-index: 190 !important;
+    height: var(--module-header-height) !important;
+    min-height: var(--module-header-height) !important;
+    margin: 0 !important;
+    padding: 4px 0 8px !important;
+    background: var(--bg-primary) !important;
+    box-sizing: border-box;
+  }
+
+  /* Keep the Finance content immediately below the fixed module header. */
+  #module-finance {
+    overflow: visible !important;
+  }
+
+  /* Prevent the Lending/Investments heading inside the page from scrolling away. */
+  #module-finance .finance-section-tabs,
+  #module-finance .finance-tabs,
+  #module-finance .fin-section-tabs {
+    position: sticky !important;
+    top: calc(var(--top-safe) + var(--app-header-height) + var(--module-header-height)) !important;
+    z-index: 170 !important;
+    background: var(--bg-primary) !important;
+  }
+
+  /* Tight, consistent gap between Personal Finances and Lending/Investments. */
+  #module-finance > .module-header + #fintab-lending,
+  #module-finance > .module-header + #fintab-investments {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+}
+</style>
+
+
+<style id="finance-and-mobile-header-polish-v2">
+/* ===== Mobile header consistency: Nutrition + Personal Finances ===== */
+@media (max-width:600px) {
+  /* Keep the top app bar visually identical between modules. */
+  .app-header {
+    align-items: center !important;
+    margin-bottom: 4px !important;
+  }
+  .header-title {
+    align-items: center !important;
+    min-width: 0 !important;
+  }
+  #appTitle {
+    text-align: left !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: clamp(.88rem, 4.8vw, 1.08rem) !important;
+    line-height: 1 !important;
+    letter-spacing: .04em !important;
+  }
+
+  /* Personal Finances uses the same compact back-button treatment as Nutrition. */
+  #module-finance ~ * { }
+  .back-btn {
+    width: 36px !important;
+    height: 36px !important;
+    flex: 0 0 36px !important;
+    border-radius: 10px !important;
+    font-size: 1.15rem !important;
+  }
+
+  /* Finance module header: same height, spacing, accent rail and safe-area alignment as Nutrition. */
+  #module-finance > .module-header {
+    position: sticky !important;
+    top: calc(var(--top-safe) + var(--app-header-height)) !important;
+    z-index: 190 !important;
+    height: var(--module-header-height) !important;
+    min-height: var(--module-header-height) !important;
+    margin: 0 !important;
+    padding: 4px 0 8px !important;
+    background: var(--bg-primary) !important;
+    box-sizing: border-box !important;
+  }
+  #module-finance > .module-header::after {
+    content: '' !important;
+    position: absolute !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 48px !important;
+    height: 3px !important;
+    border-radius: 0 3px 3px 0 !important;
+    background: var(--accent) !important;
+  }
+  #module-finance .module-header-left {
+    gap: 9px !important;
+    min-width: 0 !important;
+  }
+  #module-finance .module-title-text {
+    font-size: 1.05rem !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+  }
+  #module-finance .fin-header-add-btn {
+    width: 34px !important;
+    height: 34px !important;
+    margin-right: 0 !important;
+  }
+
+  /* Finance content starts directly below the pinned header. */
+  #module-finance > #fintab-lending,
+  #module-finance > #fintab-investments {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* Compact portfolio summary: four tiles in a clean 2 x 2 grid. */
+  #fintab-investments .fin-hero,
+  #fintab-lending .fin-hero {
+    padding: 12px !important;
+    margin: 4px 0 8px !important;
+    border-radius: 16px !important;
+  }
+  #fintab-investments .fin-hero .h-val,
+  #fintab-lending .fin-hero .h-val {
+    font-size: 1.55rem !important;
+    margin-top: 3px !important;
+  }
+  #fintab-investments .fin-tiles,
+  #fintab-lending .fin-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    margin-top: 9px !important;
+  }
+  #fintab-investments .fin-tile,
+  #fintab-lending .fin-tile {
+    min-width: 0 !important;
+    padding: 8px 10px !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+  }
+  #fintab-investments .fin-tile .t-val,
+  #fintab-lending .fin-tile .t-val {
+    font-size: .92rem !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  #fintab-investments .fin-tile .t-lbl,
+  #fintab-lending .fin-tile .t-lbl {
+    font-size: .58rem !important;
+    margin-top: 2px !important;
+  }
+
+  /* Holdings / Lending section heading sits neatly under the summary, not in a huge gap. */
+  #fintab-investments .fin-sec-head,
+  #fintab-lending .fin-sec-head {
+    margin: 10px 0 2px !important;
+  }
+
+  /* Make the selected app theme continue cleanly from the top bar through the finance module. */
+  #module-finance,
+  #fintab-lending,
+  #fintab-investments {
+    background: var(--bg-primary) !important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="container">
