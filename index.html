@@ -911,33 +911,68 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
   transform-origin: 50% 12% !important;
   background: var(--bg-card) !important;
 }
-[data-swipe-deck].fin-layout-stacked-swipe > .loan-card[style*="pointer-events: none"]::after,
-[data-swipe-deck].fin-layout-stacked-swipe > .inv-card[style*="pointer-events: none"]::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 999;
-  border-radius: inherit;
-  background: var(--bg-card);
-  pointer-events: none;
+[data-swipe-deck].fin-layout-stacked-swipe > .loan-card[style*="pointer-events: none"] > *,
+[data-swipe-deck].fin-layout-stacked-swipe > .inv-card[style*="pointer-events: none"] > * {
+  visibility: hidden !important;
 }
 </style>
 
-<style id="finance-active-height-tilted-stack-v2">
-/* Finance deep stack: active card is straight; only clean tilted edges of the next cards show. */
+<style id="finance-visible-fan-tested-v2">
+/* Tested finance fan: front card straight; rear cards visibly protrude from opposite sides. */
 [data-swipe-deck].fin-layout-stacked-swipe {
-  overflow: hidden !important;
-  padding: 10px 0 18px !important;
+  overflow: visible !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 [data-swipe-deck].fin-layout-stacked-swipe > .loan-card,
 [data-swipe-deck].fin-layout-stacked-swipe > .inv-card {
+  left: 7% !important;
+  width: 86% !important;
   transform-origin: 50% 10% !important;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  border-width: 1px !important;
+  border-left-width: 3px !important;
 }
-[data-swipe-deck].fin-layout-stacked-swipe > .loan-card[style*="pointer-events: none"],
-[data-swipe-deck].fin-layout-stacked-swipe > .inv-card[style*="pointer-events: none"] {
+</style>
+
+<style id="finance-visible-fan-final-v3">
+/* Finance Stacked Swipe Deck: a real visible fan, matching the Nutrition deck. */
+[data-swipe-deck].fin-layout-stacked-swipe {
+  overflow: visible !important;
+  padding: 12px 0 26px !important;
+  isolation: isolate;
+}
+[data-swipe-deck].fin-layout-stacked-swipe > .loan-card,
+[data-swipe-deck].fin-layout-stacked-swipe > .inv-card {
+  left: 8% !important;
+  width: 84% !important;
+  transform-origin: 50% 8% !important;
   overflow: hidden !important;
+}
+/* Rear cards are real cards, but their content is hidden so only clean tilted surfaces show. */
+[data-swipe-deck].fin-layout-stacked-swipe > .finance-deck-back-card > * {
+  visibility: hidden !important;
+}
+[data-swipe-deck].fin-layout-stacked-swipe > [data-stack-depth="1"] {
+  border-color: var(--accent) !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,.38), 0 0 0 1px var(--accent-glow) !important;
+}
+[data-swipe-deck].fin-layout-stacked-swipe > [data-stack-depth="2"] {
+  border-color: var(--accent2) !important;
+  box-shadow: 0 14px 32px rgba(0,0,0,.42) !important;
+}
+[data-swipe-deck].fin-layout-stacked-swipe > [data-stack-depth="0"] {
+  filter: none !important;
+}
+</style>
+
+<style id="finance-deck-animation-conflict-fix-v1">
+/* Critical: the generic .view-enter card animation used animation-fill-mode: both,
+   which permanently forced transform: translateY(0) onto Finance cards and overrode
+   the swipe deck's JS rotate()/translate3d() transforms. Disable that animation only
+   for Finance stacked-swipe cards so the real fan geometry can render. */
+.view-enter [data-swipe-deck].fin-layout-stacked-swipe > .loan-card,
+.view-enter [data-swipe-deck].fin-layout-stacked-swipe > .inv-card {
+  animation: none !important;
 }
 </style>
 </head>
@@ -2430,6 +2465,15 @@ function loadState() {
       state.finance.loans.forEach(l => {
         if (!l.interestPayments) l.interestPayments = [];
         if (!l.principalPayments) l.principalPayments = [];
+        if (!l.principalAdditions) l.principalAdditions = [];
+        // Multi-rate principal migration: older additions inherit the original loan rate;
+        // older repayments default to highest-interest-rate-first allocation.
+        l.principalAdditions.forEach(a => {
+          if (a.rate === undefined || a.rate === null || a.rate === '') a.rate = Number(l.rate) || 0;
+        });
+        l.principalPayments.forEach(p => {
+          if (!p.targetTrancheId) p.targetTrancheId = 'highest';
+        });
         // Old single "payments" list is treated as interest payments
         if (Array.isArray(l.payments)) {
           l.interestPayments = l.interestPayments.concat(l.payments);
@@ -3158,47 +3202,73 @@ function setupSwipeDecks() {
 
     const render = (dragX = 0) => {
       const isFinanceDeepStack = deck.classList.contains('fin-layout-stacked-swipe');
-      // Finance cards can have very different natural heights. If the cards behind the
-      // active one keep their own height, their lower sections remain visible below the
-      // front card. Match every background card to the active card's height so only the
-      // intended tilted edge/peek is visible, just like the Nutrition meal deck.
-      let financeActiveHeight = 0;
-      if (isFinanceDeepStack && cards[state.index]) {
-        cards[state.index].style.height = 'auto';
-        cards[state.index].style.minHeight = '0';
-        financeActiveHeight = cards[state.index].offsetHeight;
+      const activeCard = cards[state.index];
+
+      // The active Finance card must remain content-sized. Rear cards are synced to this
+      // height after rendering so they form a true fan instead of long horizontal strips.
+      if (isFinanceDeepStack && activeCard) {
+        activeCard.style.height = 'auto';
+        activeCard.style.minHeight = '0';
       }
-      const stepX = isPager ? 0 : isFinanceDeepStack ? 13 : isDeepStack ? 20 : 16;
-      const stepY = isPager ? 0 : isFinanceDeepStack ? 12 : isDeepStack ? 15 : 12;
+
       cards.forEach((card, index) => {
         const relative = (index - state.index + cards.length) % cards.length;
+        card.classList.toggle('finance-deck-back-card', isFinanceDeepStack && relative > 0 && relative <= 2);
+        card.dataset.stackDepth = relative <= 2 ? String(relative) : 'hidden';
+
         if (relative > 2) {
           card.style.opacity = '0';
           card.style.pointerEvents = 'none';
           card.style.zIndex = '0';
+          card.style.filter = 'none';
           card.style.transform = 'translate3d(0,18px,0) scale(.88)';
           return;
         }
+
         const cardDrag = relative === 0 ? dragX : 0;
-        if (isFinanceDeepStack) {
-          card.style.height = relative === 0 ? 'auto' : `${financeActiveHeight}px`;
-          card.style.minHeight = '0';
-          card.style.overflow = 'hidden';
-        }
-        const baseRotation = isPager ? 0 : relative === 0 ? 0 : (relative % 2 ? (isFinanceDeepStack ? -3.6 : -2) : (isFinanceDeepStack ? 3.6 : 2));
-        const rotation = relative === 0 ? baseRotation + cardDrag / 18 : baseRotation;
-        const scale = isPager ? (relative === 0 ? 1 : 0.97) : isFinanceDeepStack ? 1 - relative * 0.025 : 1 - relative * 0.045;
-        card.style.opacity = relative === 0 ? '1' : relative === 1 ? '0.76' : '0.48';
         card.style.pointerEvents = relative === 0 ? 'auto' : 'none';
         card.style.zIndex = String(cards.length - relative);
-        card.style.transform = `translate3d(${relative * stepX + cardDrag}px,${relative * stepY}px,0) rotate(${rotation}deg) scale(${scale})`;
+
+        if (isFinanceDeepStack) {
+          // Match the Nutrition stacked-deck language, but exaggerate the fan slightly
+          // because Finance cards are much taller. The rear cards lean in opposite
+          // directions so their side edges are visible, not just their bottom edges.
+          let x = cardDrag, y = 0, rotation = cardDrag / 22, scale = 1, brightness = 1;
+          if (relative === 1) {
+            x = 14; y = 16; rotation = 3.8; scale = 0.985; brightness = 0.82;
+          } else if (relative === 2) {
+            x = -14; y = 28; rotation = -3.8; scale = 0.97; brightness = 0.68;
+          }
+          card.style.opacity = '1';
+          card.style.filter = `brightness(${brightness})`;
+          card.style.transform = `translate3d(${x}px,${y}px,0) rotate(${rotation}deg) scale(${scale})`;
+        } else {
+          const stepX = isPager ? 0 : isDeepStack ? 20 : 16;
+          const stepY = isPager ? 0 : isDeepStack ? 15 : 12;
+          const baseRotation = isPager ? 0 : relative === 0 ? 0 : (relative % 2 ? -2 : 2);
+          const rotation = relative === 0 ? baseRotation + cardDrag / 18 : baseRotation;
+          const scale = isPager ? (relative === 0 ? 1 : 0.97) : 1 - relative * 0.045;
+          card.style.opacity = relative === 0 ? '1' : relative === 1 ? '0.76' : '0.48';
+          card.style.filter = 'none';
+          card.style.transform = `translate3d(${relative * stepX + cardDrag}px,${relative * stepY}px,0) rotate(${rotation}deg) scale(${scale})`;
+        }
       });
-      // Investment holdings contain only a few compact metrics. Size the deck to the
-      // current card instead of inheriting the 585px loan-card canvas.
-      if (deck.classList.contains('investment-deck') || deck.classList.contains('fin-layout-stacked-swipe')) {
-        const activeCard = cards[state.index];
-        const stackPeek = cards.length > 1 ? (isDeepStack ? 34 : 28) : 0;
-        const h = activeCard ? activeCard.offsetHeight + stackPeek + 22 : 0;
+
+      if (isFinanceDeepStack && activeCard) {
+        const activeHeight = activeCard.offsetHeight;
+        cards.forEach((card, index) => {
+          const relative = (index - state.index + cards.length) % cards.length;
+          if (relative === 1 || relative === 2) {
+            card.style.height = `${activeHeight}px`;
+            card.style.minHeight = `${activeHeight}px`;
+          }
+        });
+      }
+
+      // Size the deck around the active card plus enough room for the tilted fan.
+      if (deck.classList.contains('investment-deck') || isFinanceDeepStack) {
+        const stackPeek = cards.length > 1 ? (isFinanceDeepStack ? 62 : 28) : 0;
+        const h = activeCard ? activeCard.offsetHeight + stackPeek + 18 : 0;
         if (h > 0) deck.style.height = `${h}px`;
       }
     };
@@ -3270,8 +3340,16 @@ function setupSwipeDecks() {
       advance(dx < 0 ? -1 : 1);
     };
 
+    // Interactive controls inside the front card must behave like normal controls.
+    // On desktop, do not start a deck drag when the pointer starts on a button/input/etc.
+    // The user can still drag the stacked card from any non-interactive area.
+    const isInteractiveTarget = target => !!(target && target.closest && target.closest(
+      'button, input, select, textarea, a, label, summary, [contenteditable="true"], [role="button"], [role="link"], [role="checkbox"], [role="radio"], [role="switch"], [role="tab"], [role="menuitem"]'
+    ));
+
     const onPointerDown = event => {
       if (event.pointerType === 'touch' || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      if (isInteractiveTarget(event.target)) return;
       beginDrag(event.clientX, event.clientY, 'pointer');
       if (deck.setPointerCapture) deck.setPointerCapture(event.pointerId);
     };
@@ -3292,6 +3370,8 @@ function setupSwipeDecks() {
     const getTouch = event => event.touches[0] || event.changedTouches[0];
     const onTouchStart = event => {
       if (state.input === 'pointer') return;
+      // Preserve normal taps/focus on form controls and buttons inside the active card.
+      if (isInteractiveTarget(event.target)) return;
       const touch = getTouch(event);
       if (touch) beginDrag(touch.clientX, touch.clientY, 'touch');
     };
@@ -4572,16 +4652,13 @@ function fmtDay(dateStr) {
 }
 
 // ---- Loan calculations ----
-// Reducing-balance model:
-//   - rate is MONTHLY interest %.
-//   - principalPayments reduce the outstanding principal.
-//   - interestPayments track the monthly interest the borrower pays.
-//   - Monthly interest due is calculated on the CURRENT outstanding principal.
+// Multi-tranche reducing-balance model:
+//   - The original principal is tranche "orig" and uses loan.rate.
+//   - Every principal addition is its own tranche and can have its own monthly rate.
+//   - Principal repayments can target a specific tranche or use "highest rate first".
+//   - Additions/repayments within the first 10 days of a cycle affect that same cycle;
+//     transactions later in the cycle affect interest from the next cycle onward.
 const MS_DAY = 1000 * 60 * 60 * 24;
-
-// A principal repayment made within this many days of a cycle's start counts toward THAT
-// cycle's interest. If it lands later in the cycle, that cycle still charges interest on the
-// old balance and the reduction applies from the next cycle onwards.
 const PRINCIPAL_GRACE_DAYS = 10;
 
 function addDays(dateStr, days) {
@@ -4590,8 +4667,6 @@ function addDays(dateStr, days) {
   return d;
 }
 
-// Add whole calendar months to a date, keeping the same day-of-month.
-// If the target month is shorter (e.g. Jan 31 + 1mo), it clamps to the last day of that month.
 function addMonths(dateStr, months) {
   const d = new Date(dateStr);
   const targetDay = d.getDate();
@@ -4602,73 +4677,141 @@ function addMonths(dateStr, months) {
   return d;
 }
 
-// Build a month-by-month (calendar-month cycle) interest ledger for a loan.
-// A cycle runs from the same day-of-month to the next month's same day, regardless of
-// whether the month has 28/30/31 days. Interest accrues on the outstanding principal
-// during that cycle, and interest payments waterfall across cycles in date order.
+function principalTrancheDefinitions(loan) {
+  const defs = [{
+    id: 'orig',
+    source: 'original',
+    date: loan.startDate || '',
+    amount: Number(loan.principal) || 0,
+    rate: Number(loan.rate) || 0,
+    label: 'Original loan'
+  }];
+  (loan.principalAdditions || []).forEach(a => defs.push({
+    id: `add:${a.id}`,
+    source: 'addition',
+    additionId: a.id,
+    date: a.date || loan.startDate || '',
+    amount: Number(a.amount) || 0,
+    rate: (a.rate === undefined || a.rate === null || a.rate === '') ? (Number(loan.rate) || 0) : (Number(a.rate) || 0),
+    label: `Added ${fmtDay(a.date)}`
+  }));
+  return defs;
+}
+
+function allocatePrincipalRepayment(balances, tranches, amount, targetTrancheId) {
+  let remaining = Math.max(Number(amount) || 0, 0);
+  const allocations = [];
+  const byId = Object.fromEntries(tranches.map(t => [t.id, t]));
+
+  let order;
+  if (targetTrancheId && targetTrancheId !== 'highest' && byId[targetTrancheId]) {
+    order = [byId[targetTrancheId]];
+  } else {
+    order = tranches.slice().sort((a, b) =>
+      (Number(b.rate) || 0) - (Number(a.rate) || 0) ||
+      String(a.date || '').localeCompare(String(b.date || ''))
+    );
+  }
+
+  for (const t of order) {
+    if (remaining <= 0.0001) break;
+    const available = Math.max(Number(balances[t.id]) || 0, 0);
+    if (available <= 0.0001) continue;
+    const applied = Math.min(available, remaining);
+    balances[t.id] = available - applied;
+    allocations.push({ trancheId: t.id, amount: applied });
+    remaining -= applied;
+  }
+  return { allocations, unapplied: remaining };
+}
+
+// Replays principal activity up to a cutoff date and returns per-tranche balances.
+// This makes historical interest calculations deterministic even when rates differ.
+function getPrincipalTrancheSnapshot(loan, cutoffDate, excludePaymentId = null) {
+  const cutoff = cutoffDate || new Date().toISOString().split('T')[0];
+  const allDefs = principalTrancheDefinitions(loan);
+  const tranches = allDefs.filter(t => !t.date || t.date <= cutoff);
+  const balances = {};
+  tranches.forEach(t => { balances[t.id] = Math.max(Number(t.amount) || 0, 0); });
+
+  const payments = (loan.principalPayments || [])
+    .filter(p => p.id !== excludePaymentId && (!p.date || p.date <= cutoff))
+    .slice()
+    .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.id).localeCompare(String(b.id)));
+
+  payments.forEach(p => {
+    allocatePrincipalRepayment(balances, tranches, Number(p.amount) || 0, p.targetTrancheId || 'highest');
+  });
+
+  const rows = tranches.map(t => ({ ...t, balance: Math.max(Number(balances[t.id]) || 0, 0) }));
+  const totalOutstanding = rows.reduce((sum, t) => sum + t.balance, 0);
+  const monthlyInterest = rows.reduce((sum, t) => sum + t.balance * ((Number(t.rate) || 0) / 100), 0);
+  return { tranches: rows, totalOutstanding, monthlyInterest };
+}
+
+function principalTargetLabel(loan, targetTrancheId) {
+  if (!targetTrancheId || targetTrancheId === 'highest') return 'Highest rate first';
+  const t = principalTrancheDefinitions(loan).find(x => x.id === targetTrancheId);
+  if (!t) return 'Highest rate first';
+  return `${t.label} · ${t.rate}%/mo`;
+}
+
+function principalTargetOptionsHtml(loan, selected = 'highest', cutoffDate = null, excludePaymentId = null) {
+  const snap = getPrincipalTrancheSnapshot(loan, cutoffDate || new Date().toISOString().split('T')[0], excludePaymentId);
+  let html = `<option value="highest"${selected === 'highest' || !selected ? ' selected' : ''}>Auto — highest rate first</option>`;
+  snap.tranches.filter(t => t.balance > 0.01).forEach(t => {
+    const sel = selected === t.id ? ' selected' : '';
+    html += `<option value="${t.id}"${sel}>${escapeHtml(t.label)} — ${fmtMoney(t.balance)} @ ${t.rate}%/mo</option>`;
+  });
+  return html;
+}
+
+function updatePrincipalTransactionFields(loanId) {
+  const typeEl = document.getElementById(`ppay-type-${loanId}`);
+  const rateWrap = document.getElementById(`ppay-rate-wrap-${loanId}`);
+  const targetWrap = document.getElementById(`ppay-target-wrap-${loanId}`);
+  const isAddition = typeEl && typeEl.value === 'addition';
+  if (rateWrap) rateWrap.style.display = isAddition ? 'contents' : 'none';
+  if (targetWrap) targetWrap.style.display = isAddition ? 'none' : 'contents';
+}
+
 function buildInterestSchedule(loan) {
-  const principal = Number(loan.principal) || 0;
-  const rate = Number(loan.rate) || 0; // monthly %
   if (!loan.startDate) return { cycles: [], totalDue: 0, totalPaid: 0, advance: 0 };
-
   const now = new Date();
-
-  // Count completed calendar-month cycles: increment months until the next boundary passes today.
   let cyclesElapsed = 0;
-  while (addMonths(loan.startDate, cyclesElapsed + 1) <= now) {
-    cyclesElapsed++;
-  }
+  while (addMonths(loan.startDate, cyclesElapsed + 1) <= now) cyclesElapsed++;
 
-  // Principal repayments sorted by date, used to compute outstanding principal per cycle.
-  const pPays = (loan.principalPayments || []).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
-
-  // Outstanding principal on/before a given date = original minus principal repaid up to that date (inclusive).
-  // Compares by YYYY-MM-DD strings to avoid time-of-day/timezone edge cases.
-  function outstandingAt(dateObj) {
-    const cutoff = dateObj.toISOString().split('T')[0];
-    let repaid = 0;
-    pPays.forEach(p => { if (p.date <= cutoff) repaid += Number(p.amount) || 0; });
-    return Math.max(principal - repaid, 0);
-  }
-
-  // Build cycles (each = one calendar month from start).
-  // A cycle's interest uses the principal outstanding as of PRINCIPAL_GRACE_DAYS after the cycle
-  // started. So a repayment made early in the month (within the grace window) reduces that same
-  // month's interest, while one made later only takes effect from the next month.
-  // (e.g. cycle 12 Apr -> 12 May, grace to 22 Apr: a 9 May repayment is too late, so that month
-  //  charges 3% of 500000 and the 12 May -> 12 Jun month charges 3% of 300000. Had the repayment
-  //  landed on 18 Apr, the 12 Apr -> 12 May month itself would charge 3% of 300000.)
   const cycles = [];
   for (let i = 0; i < cyclesElapsed; i++) {
     const cycleStart = addMonths(loan.startDate, i);
     const cycleEnd = addMonths(loan.startDate, i + 1);
     const graceCutoff = addDays(cycleStart.toISOString().split('T')[0], PRINCIPAL_GRACE_DAYS);
-    const outstanding = outstandingAt(graceCutoff);
-    const due = outstanding * (rate / 100);
+    const snap = getPrincipalTrancheSnapshot(loan, graceCutoff.toISOString().split('T')[0]);
+    const rateBreakdown = snap.tranches
+      .filter(t => t.balance > 0.01)
+      .map(t => ({ trancheId: t.id, label: t.label, balance: t.balance, rate: t.rate, due: t.balance * (t.rate / 100) }));
+    const due = rateBreakdown.reduce((sum, t) => sum + t.due, 0);
     cycles.push({
       index: i + 1,
       start: cycleStart.toISOString().split('T')[0],
       end: cycleEnd.toISOString().split('T')[0],
-      outstanding, due, paid: 0, payments: []
+      outstanding: snap.totalOutstanding,
+      due,
+      rateBreakdown,
+      paid: 0,
+      payments: []
     });
   }
 
-  // Pure date-ordered waterfall: process each interest payment in date order and use it to
-  // fill the OLDEST unpaid month's due first, cascading to later months. Each chunk is listed
-  // under the month it actually settled, so a payment can be split across months.
   const iPays = (loan.interestPayments || []).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
   cycles.forEach(cy => { cy.paid = 0; cy.payments = []; });
-  let advance = 0;              // net advance remaining (after covering all elapsed dues)
-  const paymentAdvance = {};    // per-payment: amount of THIS installment that was paid ahead of what was due
+  let advance = 0;
+  const paymentAdvance = {};
 
   iPays.forEach(p => {
     let remaining = Number(p.amount) || 0;
-    // 1) Cover older pending months AND the CURRENT month (the cycle the payment date falls in).
-    //    A cycle is a current/past obligation if the payment was made after that cycle STARTED.
-    //    Only cycles that start on/after the payment date are "future" -> that portion is advance.
-    //    So a payment is advance only once the current month's own interest is fully covered.
     for (let c = 0; c < cycles.length && remaining > 0.0001; c++) {
-      const isFuture = cycles[c].start > p.date;  // cycle starts strictly after the payment date
+      const isFuture = cycles[c].start > p.date;
       if (isFuture) break;
       const gap = cycles[c].due - cycles[c].paid;
       if (gap <= 0.0001) continue;
@@ -4677,10 +4820,7 @@ function buildInterestSchedule(loan) {
       cycles[c].payments.push({ date: p.date, amount: applied, note: p.note, id: p.id });
       remaining -= applied;
     }
-    // 2) Whatever is left is paid ahead — this installment's advance portion.
     if (remaining > 0.0001) paymentAdvance[p.id] = remaining;
-
-    // 3) Apply that advance forward to future (not-yet-due) elapsed cycles for the ledger display.
     for (let c = 0; c < cycles.length && remaining > 0.0001; c++) {
       const gap = cycles[c].due - cycles[c].paid;
       if (gap <= 0.0001) continue;
@@ -4689,22 +4829,15 @@ function buildInterestSchedule(loan) {
       cycles[c].payments.push({ date: p.date, amount: applied, note: p.note, id: p.id, ahead: true });
       remaining -= applied;
     }
-    if (remaining > 0.0001) advance += remaining; // beyond all elapsed months -> net advance credit
+    if (remaining > 0.0001) advance += remaining;
   });
 
-  // Per-month "received" = sum of chunks that settled that month (for display).
   cycles.forEach(cy => { cy.received = cy.payments.reduce((s, x) => s + x.amount, 0); });
-
-  // Per-payment PENDING: for each fully-elapsed month that ended short, attribute the shortfall
-  // to the latest payment that was made for that month (so that installment's row shows what
-  // was still pending for its month). Months whose due date hasn't passed yet aren't "pending".
   const todayStr = new Date().toISOString().split('T')[0];
   const paymentPending = {};
   cycles.forEach(cy => {
     const shortfall = cy.due - cy.paid;
-    if (shortfall <= 0.01) return;             // fully paid (or overpaid via cascade)
-    if (cy.end > todayStr) return;             // month not over yet -> not pending, just current
-    // Find the latest payment (by date) that contributed to this month.
+    if (shortfall <= 0.01 || cy.end > todayStr) return;
     if (cy.payments.length > 0) {
       const last = cy.payments.reduce((a, b) => (a.date >= b.date ? a : b));
       paymentPending[last.id] = (paymentPending[last.id] || 0) + shortfall;
@@ -4717,24 +4850,29 @@ function buildInterestSchedule(loan) {
 }
 
 function calcLoan(loan) {
-  const principal = Number(loan.principal) || 0;
-  const rate = Number(loan.rate) || 0; // monthly %
+  const originalPrincipal = Number(loan.principal) || 0;
+  const principalAdded = (loan.principalAdditions || []).reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const principal = originalPrincipal + principalAdded;
   const principalPaid = (loan.principalPayments || []).reduce((s, p) => s + (Number(p.amount) || 0), 0);
   const interestPaid = (loan.interestPayments || []).reduce((s, p) => s + (Number(p.amount) || 0), 0);
-  const outstandingPrincipal = Math.max(principal - principalPaid, 0);
-  const monthlyInterest = outstandingPrincipal * (rate / 100);
+  const currentSnap = getPrincipalTrancheSnapshot(loan, new Date().toISOString().split('T')[0]);
+  const outstandingPrincipal = currentSnap.totalOutstanding;
+  const monthlyInterest = currentSnap.monthlyInterest;
+  const activeRates = [...new Set(currentSnap.tranches.filter(t => t.balance > 0.01).map(t => Number(t.rate) || 0))];
+  const rateLabel = activeRates.length <= 1 ? `${activeRates.length ? activeRates[0] : (Number(loan.rate) || 0)}% / mo` : 'Mixed rates';
 
   const sched = buildInterestSchedule(loan);
   const monthsElapsed = sched.cycles.length;
   const expectedInterest = sched.totalDue;
-  const interestBalance = expectedInterest - interestPaid; // >0 pending, <0 advance
+  const interestBalance = expectedInterest - interestPaid;
   const interestPending = Math.max(interestBalance, 0);
   const interestAdvance = Math.max(-interestBalance, 0);
   const overdue = interestPending > 0.01;
   const interestFullyPaid = expectedInterest > 0.01 && Math.abs(interestBalance) <= 0.01;
 
   return {
-    principal, rate, principalPaid, interestPaid, outstandingPrincipal, monthlyInterest,
+    principal, originalPrincipal, principalAdded, rate: Number(loan.rate) || 0, rateLabel,
+    principalPaid, interestPaid, outstandingPrincipal, monthlyInterest, tranches: currentSnap.tranches,
     monthsElapsed, expectedInterest, schedule: sched,
     interestBalance, interestPending, interestAdvance, interestFullyPaid, overdue,
     interestOutstanding: interestPending
@@ -4743,9 +4881,7 @@ function calcLoan(loan) {
 
 // Derives the two dates shown on the loan card's due-status row:
 //   - overdueSince: the END date of the OLDEST cycle that is still short (only set when overdue).
-//   - nextDue: the END date of the most recent elapsed cycle (i.e. when the next cycle's
-//     interest becomes due). Falls back to one month after the start date if no cycle has
-//     elapsed yet.
+//   - nextDue: the next upcoming monthly boundary after all elapsed cycles.
 function nextDueInfo(loan, calc) {
   const cycles = calc.schedule.cycles;
   let overdueSince = null;
@@ -4753,9 +4889,13 @@ function nextDueInfo(loan, calc) {
     const oldestShort = cycles.find(cy => (cy.due - cy.paid) > 0.01);
     if (oldestShort) overdueSince = oldestShort.end;
   }
-  const nextDue = cycles.length > 0
-    ? cycles[cycles.length - 1].end
-    : (loan.startDate ? addMonths(loan.startDate, 1).toISOString().split('T')[0] : null);
+
+  // The schedule contains only completed/elapsed monthly cycles. The next due date
+  // is therefore the boundary AFTER the last elapsed cycle.
+  // Example: 1 Aug start + 1 elapsed cycle (1 Sep) => next due 1 Oct.
+  const nextDue = loan.startDate
+    ? addMonths(loan.startDate, cycles.length + 1).toISOString().split('T')[0]
+    : null;
   return { overdueSince, nextDue };
 }
 
@@ -4913,8 +5053,10 @@ function renderLending() {
         <div class="loan-top">
           <div class="loan-avatar">${escapeHtml(initialsOf(loan.borrower))}</div>
           <div class="loan-id">
-            <div class="loan-name">${escapeHtml(loan.borrower)} <span class="fin-chip">${c.rate}% / mo</span></div>
-            <div class="loan-meta">Lent ${fmtMoney(c.principal)} on ${fmtDay(loan.startDate)}${loan.note ? ' · ' + escapeHtml(loan.note) : ''}</div>
+            <div class="loan-name">${escapeHtml(loan.borrower)} <span class="fin-chip">${c.rateLabel}</span></div>
+            <div class="loan-meta">${c.principalAdded > 0.01
+              ? `Initially ${fmtMoney(c.originalPrincipal)} on ${fmtDay(loan.startDate)} · Added ${fmtMoney(c.principalAdded)} · Total lent ${fmtMoney(c.principal)}`
+              : `Lent ${fmtMoney(c.principal)} on ${fmtDay(loan.startDate)}`}${loan.note ? ' · ' + escapeHtml(loan.note) : ''}</div>
           </div>
           <button class="icon-btn" title="Delete loan" aria-label="Delete loan for ${escapeHtml(loan.borrower)}" onclick="deleteLoan('${loan.id}')">🗑</button>
         </div>
@@ -4950,11 +5092,24 @@ function renderLending() {
 
         <div id="ppay-box-${loan.id}" style="display:none;">
           <div class="fin-sub">
+            <select id="ppay-type-${loan.id}" title="Principal transaction type" aria-label="Principal transaction type" onchange="updatePrincipalTransactionFields('${loan.id}')">
+              <option value="repayment">Repayment received</option>
+              <option value="addition">Add more principal</option>
+            </select>
             <input type="date" id="ppay-date-${loan.id}" value="${today}">
             <input type="number" id="ppay-amt-${loan.id}" placeholder="Principal ₹" step="0.01" min="0" style="width:110px;">
+            <span id="ppay-rate-wrap-${loan.id}" style="display:none;">
+              <input type="number" id="ppay-rate-${loan.id}" value="${loan.rate}" placeholder="Rate %/mo" step="0.01" min="0" style="width:105px;" title="Monthly interest rate for this added principal">
+            </span>
+            <span id="ppay-target-wrap-${loan.id}" style="display:contents;">
+              <select id="ppay-target-${loan.id}" title="Apply repayment to" aria-label="Apply repayment to">
+                ${principalTargetOptionsHtml(loan, 'highest')}
+              </select>
+            </span>
             <input type="text" id="ppay-note-${loan.id}" placeholder="Note (optional)" style="min-width:120px;flex:1;">
             <button class="btn btn-success btn-sm" onclick="addPayment('${loan.id}','principal')">Save</button>
           </div>
+          <div class="fin-muted" style="margin-top:5px;">Added principal can use a different monthly rate. Repayments default to the highest-rate balance first, or you can choose a specific tranche.</div>
         </div>`;
 
       const sched = c.schedule;
@@ -4982,7 +5137,7 @@ function renderLending() {
           html += `<div class="month-row">
             <div>
               <div class="m-title">Month ${cy.index} ${pill}</div>
-              <div class="fin-muted">${fmtDay(cy.start)} → ${fmtDay(cy.end)} · ${c.rate}% of ${fmtMoney(cy.outstanding)} = due ${fmtMoney(due)} · paid ${fmtMoney(covered)}</div>
+              <div class="fin-muted">${fmtDay(cy.start)} → ${fmtDay(cy.end)} · ${cy.rateBreakdown.map(rb => `${fmtMoney(rb.balance)} @ ${rb.rate}%`).join(' + ') || 'No principal'} = due ${fmtMoney(due)} · paid ${fmtMoney(covered)}</div>
               ${cy.payments.map(pp => `<div class="fin-muted" style="margin-top:2px;">• ${fmtDay(pp.date)}: <span class="fin-pos">${fmtMoney(pp.amount)}</span>${pp.note ? ' — ' + escapeHtml(pp.note) : ''}</div>`).join('')}
             </div>
           </div>`;
@@ -5028,38 +5183,49 @@ function renderLending() {
       }
       html += `</div>`; // end ledger
 
-      // ===== Principal repayments (collapsible) =====
+      // ===== Principal activity: additions + repayments (collapsible) =====
       const prinId = `prin-${loan.id}`, prinChev = `chev-p-${loan.id}`;
-      const prinOpen = editingPayment && editingPayment.startsWith('principal-') &&
-        (loan.principalPayments || []).some(p => `principal-${p.id}` === editingPayment);
+      const principalEditOpen = editingPayment && (
+        ((editingPayment.startsWith('principal-')) && (loan.principalPayments || []).some(p => `principal-${p.id}` === editingPayment)) ||
+        ((editingPayment.startsWith('principalAdd-')) && (loan.principalAdditions || []).some(p => `principalAdd-${p.id}` === editingPayment))
+      );
       html += `<div class="fin-toggle" onclick="toggleFinSection('${prinId}','${prinChev}')">
-        <span>🏦 Principal repayments — repaid ${fmtMoney(c.principalPaid)}</span>
-        <span class="chev" id="${prinChev}" style="transform:rotate(${prinOpen ? 90 : 0}deg)">▶</span>
+        <span>🏦 Principal activity — repaid ${fmtMoney(c.principalPaid)}${c.principalAdded > 0.01 ? ` · added ${fmtMoney(c.principalAdded)}` : ''}</span>
+        <span class="chev" id="${prinChev}" style="transform:rotate(${principalEditOpen ? 90 : 0}deg)">▶</span>
       </div>
-      <div id="${prinId}" style="display:${prinOpen ? 'block' : 'none'};">`;
-      const pPays = (loan.principalPayments || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
-      if (pPays.length === 0) {
-        html += `<div class="fin-muted">No principal repayments yet.</div>`;
+      <div id="${prinId}" style="display:${principalEditOpen ? 'block' : 'none'};">`;
+
+      const principalActivity = [
+        ...(loan.principalPayments || []).map(p => ({ ...p, activityType: 'repayment' })),
+        ...(loan.principalAdditions || []).map(p => ({ ...p, activityType: 'addition' }))
+      ].sort((a,b) => new Date(b.date) - new Date(a.date));
+
+      if (principalActivity.length === 0) {
+        html += `<div class="fin-muted">No principal additions or repayments yet.</div>`;
       } else {
-        html += `<table class="fin-table"><tr><th>Date</th><th>Amount</th><th>Note</th><th></th></tr>`;
-        pPays.forEach(p => {
-          if (editingPayment === `principal-${p.id}`) {
-            html += editRowHtml(loan.id, 'principal', p);
+        html += `<table class="fin-table"><tr><th>Date</th><th>Type</th><th>Amount</th><th>Rate / Applied to</th><th>Note</th><th></th></tr>`;
+        principalActivity.forEach(p => {
+          const editKind = p.activityType === 'addition' ? 'principalAdd' : 'principal';
+          if (editingPayment === `${editKind}-${p.id}`) {
+            html += editRowHtml(loan.id, editKind, p, 6);
           } else {
+            const isAdd = p.activityType === 'addition';
             html += `<tr>
               <td>${fmtDay(p.date)}</td>
-              <td class="fin-pos">${fmtMoney(p.amount)}</td>
+              <td>${isAdd ? '<span class="pill pill-adv">＋ Added</span>' : '<span class="pill pill-ok">↩ Repaid</span>'}</td>
+              <td style="font-weight:700;color:${isAdd ? 'var(--fat-c)' : 'var(--success)'}">${isAdd ? '+' : '−'}${fmtMoney(p.amount)}</td>
+              <td class="fin-muted">${isAdd ? `${(p.rate === undefined || p.rate === null || p.rate === '') ? loan.rate : p.rate}%/mo` : escapeHtml(principalTargetLabel(loan, p.targetTrancheId || 'highest'))}</td>
               <td class="fin-muted">${p.note ? escapeHtml(p.note) : '—'}</td>
               <td style="text-align:right;white-space:nowrap;">
-                <button class="remove-btn" style="background:var(--fat-c);" title="Edit" onclick="startEditPayment('principal','${p.id}')">✎</button>
-                <button class="remove-btn" title="Delete" onclick="deletePayment('${loan.id}','principal','${p.id}')">✕</button>
+                <button class="remove-btn" style="background:var(--fat-c);" title="Edit" onclick="startEditPayment('${editKind}','${p.id}')">✎</button>
+                <button class="remove-btn" title="Delete" onclick="deletePayment('${loan.id}','${editKind}','${p.id}')">✕</button>
               </td>
             </tr>`;
           }
         });
         html += `</table>`;
       }
-      html += `</div>`; // end principal
+      html += `</div>`; // end principal activity
 
       html += `</div>`; // end loan card
     });
@@ -5087,7 +5253,7 @@ function addLoan() {
   state.finance.loans.push({
     id: finId(), borrower, principal, rate,
     startDate: startDate || new Date().toISOString().split('T')[0],
-    note, interestPayments: [], principalPayments: []
+    note, interestPayments: [], principalPayments: [], principalAdditions: []
   });
   saveState();
   renderLending();
@@ -5117,35 +5283,64 @@ function addPayment(loanId, kind) {
   if (!date) { showToast('Select a payment date', 'error'); return; }
 
   if (kind === 'principal') {
-    const c = calcLoan(loan);
-    if (amount > c.outstandingPrincipal + 0.01) {
-      showToast(`Amount exceeds outstanding principal (${fmtMoney(c.outstandingPrincipal)})`, 'error');
+    const typeEl = document.getElementById(`ppay-type-${loanId}`);
+    const principalType = typeEl ? typeEl.value : 'repayment';
+
+    if (principalType === 'addition') {
+      if (loan.startDate && date < loan.startDate) {
+        showToast('Additional principal cannot be dated before the original loan', 'error');
+        return;
+      }
+      const rateEl = document.getElementById(`ppay-rate-${loanId}`);
+      const rate = rateEl ? parseFloat(rateEl.value) : Number(loan.rate) || 0;
+      if (Number.isNaN(rate) || rate < 0) { showToast('Enter a valid monthly interest rate', 'error'); return; }
+      if (!loan.principalAdditions) loan.principalAdditions = [];
+      loan.principalAdditions.push({ id: finId(), date, amount, rate, note });
+      saveState();
+      renderLending();
+      showToast(`Added ${fmtMoney(amount)} at ${rate}%/mo to ${loan.borrower}`);
       return;
     }
+
+    const targetEl = document.getElementById(`ppay-target-${loanId}`);
+    const targetTrancheId = targetEl ? targetEl.value : 'highest';
+    const snap = getPrincipalTrancheSnapshot(loan, date);
+    if (amount > snap.totalOutstanding + 0.01) {
+      showToast(`Amount exceeds outstanding principal on that date (${fmtMoney(snap.totalOutstanding)})`, 'error');
+      return;
+    }
+    if (targetTrancheId !== 'highest') {
+      const target = snap.tranches.find(t => t.id === targetTrancheId);
+      const available = target ? target.balance : 0;
+      if (!target || amount > available + 0.01) {
+        showToast(`Amount exceeds selected tranche balance (${fmtMoney(available)})`, 'error');
+        return;
+      }
+    }
     if (!loan.principalPayments) loan.principalPayments = [];
-    loan.principalPayments.push({ id: finId(), date, amount, note });
+    loan.principalPayments.push({ id: finId(), date, amount, targetTrancheId, note });
   } else {
     if (!loan.interestPayments) loan.interestPayments = [];
     loan.interestPayments.push({ id: finId(), date, amount, note });
   }
   saveState();
   renderLending();
-  const label = kind === 'interest' ? 'interest' : 'principal';
+  const label = kind === 'interest' ? 'interest' : 'principal repayment';
   showToast(`Recorded ${fmtMoney(amount)} ${label} from ${loan.borrower}`);
 }
-
 function deletePayment(loanId, kind, payId) {
   const loan = state.finance.loans.find(l => l.id === loanId);
   if (!loan) return;
   if (kind === 'interest') {
     loan.interestPayments = (loan.interestPayments || []).filter(p => p.id !== payId);
+  } else if (kind === 'principalAdd') {
+    loan.principalAdditions = (loan.principalAdditions || []).filter(p => p.id !== payId);
   } else {
     loan.principalPayments = (loan.principalPayments || []).filter(p => p.id !== payId);
   }
   saveState();
   renderLending();
 }
-
 // Track which payment row is currently being edited: `${kind}-${payId}` or null.
 let editingPayment = null;
 
@@ -5162,7 +5357,11 @@ function cancelEditPayment() {
 function saveEditPayment(loanId, kind, payId) {
   const loan = state.finance.loans.find(l => l.id === loanId);
   if (!loan) return;
-  const list = kind === 'interest' ? (loan.interestPayments || []) : (loan.principalPayments || []);
+  const list = kind === 'interest'
+    ? (loan.interestPayments || [])
+    : kind === 'principalAdd'
+      ? (loan.principalAdditions || [])
+      : (loan.principalPayments || []);
   const p = list.find(x => x.id === payId);
   if (!p) return;
 
@@ -5173,11 +5372,41 @@ function saveEditPayment(loanId, kind, payId) {
   if (!date) { showToast('Select a date', 'error'); return; }
 
   if (kind === 'principal') {
-    const otherRepaid = (loan.principalPayments || [])
-      .filter(x => x.id !== payId)
-      .reduce((s, x) => s + (Number(x.amount) || 0), 0);
-    if (amount + otherRepaid > (Number(loan.principal) || 0) + 0.01) {
-      showToast(`Total principal repaid would exceed the loan (${fmtMoney(loan.principal)})`, 'error');
+    const targetEl = document.getElementById(`edit-target-${payId}`);
+    const targetTrancheId = targetEl ? targetEl.value : (p.targetTrancheId || 'highest');
+    const snap = getPrincipalTrancheSnapshot(loan, date, payId);
+    if (amount > snap.totalOutstanding + 0.01) {
+      showToast(`Amount exceeds outstanding principal on that date (${fmtMoney(snap.totalOutstanding)})`, 'error');
+      return;
+    }
+    if (targetTrancheId !== 'highest') {
+      const target = snap.tranches.find(t => t.id === targetTrancheId);
+      const available = target ? target.balance : 0;
+      if (!target || amount > available + 0.01) {
+        showToast(`Amount exceeds selected tranche balance (${fmtMoney(available)})`, 'error');
+        return;
+      }
+    }
+    p.targetTrancheId = targetTrancheId;
+  }
+
+  if (kind === 'principalAdd') {
+    if (loan.startDate && date < loan.startDate) {
+      showToast('Additional principal cannot be dated before the original loan', 'error');
+      return;
+    }
+    const rateEl = document.getElementById(`edit-rate-${payId}`);
+    const rate = rateEl ? parseFloat(rateEl.value) : Number(loan.rate) || 0;
+    if (Number.isNaN(rate) || rate < 0) { showToast('Enter a valid monthly interest rate', 'error'); return; }
+    p.rate = rate;
+
+    // Do not allow shrinking/removing this tranche below repayments specifically assigned to it.
+    const trancheId = `add:${p.id}`;
+    const directlyTargeted = (loan.principalPayments || [])
+      .filter(x => x.targetTrancheId === trancheId)
+      .reduce((sum, x) => sum + (Number(x.amount) || 0), 0);
+    if (amount + 0.01 < directlyTargeted) {
+      showToast(`This tranche already has ${fmtMoney(directlyTargeted)} of direct repayments`, 'error');
       return;
     }
   }
@@ -5188,16 +5417,23 @@ function saveEditPayment(loanId, kind, payId) {
   editingPayment = null;
   saveState();
   renderLending();
-  showToast('Payment updated');
+  showToast(kind === 'principalAdd' ? 'Principal addition updated' : 'Payment updated');
 }
 
 // Render an editable payment row (used inside the ledger + principal tables).
 function editRowHtml(loanId, kind, p, colspan) {
+  const loan = state.finance.loans.find(l => l.id === loanId);
+  const extraField = kind === 'principalAdd'
+    ? `<input type="number" id="edit-rate-${p.id}" value="${(p.rate === undefined || p.rate === null || p.rate === '') ? (loan ? loan.rate : 0) : p.rate}" step="0.01" min="0" placeholder="Rate %/mo" style="width:105px;">`
+    : kind === 'principal'
+      ? `<select id="edit-target-${p.id}" title="Apply repayment to">${loan ? principalTargetOptionsHtml(loan, p.targetTrancheId || 'highest', p.date, p.id) : '<option value="highest">Auto — highest rate first</option>'}</select>`
+      : '';
   return `<tr>
     <td colspan="${colspan || 4}">
       <div class="fin-sub" style="margin:2px 0;">
         <input type="date" id="edit-date-${p.id}" value="${p.date}">
         <input type="number" id="edit-amt-${p.id}" value="${p.amount}" step="0.01" min="0" style="width:110px;">
+        ${extraField}
         <input type="text" id="edit-note-${p.id}" value="${p.note ? escapeHtml(p.note) : ''}" placeholder="Note (optional)" style="min-width:120px;flex:1;">
         <button class="btn btn-success btn-sm" onclick="saveEditPayment('${loanId}','${kind}','${p.id}')">💾 Save</button>
         <button class="btn btn-danger btn-sm" onclick="cancelEditPayment()">✕</button>
