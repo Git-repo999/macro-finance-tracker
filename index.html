@@ -864,12 +864,88 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 }
 </style>
 
+
+<style id="investment-card-compact-v1">
+/* Investments: content-sized cards instead of the finance deck's fixed 560px height. */
+[data-swipe-deck="finance"].investment-deck > .inv-card {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  padding: 12px 13px 13px;
+}
+[data-swipe-deck="finance"].investment-deck {
+  min-height: 0 !important;
+  transition: height .25s ease;
+}
+[data-swipe-deck="finance"].investment-deck .inv-row {
+  align-items: end;
+}
+</style>
+
+<style id="opaque-deep-theme-stacked-cards-v1">
+/* Improve readability in dark translucent themes: stacked cards keep their
+   depth/overlap, but each card surface is opaque so content behind cannot show through. */
+[data-theme="midnight"] .meal-layout-stacked-swipe > .meal-section,
+[data-theme="midnight"] .fin-layout-stacked-swipe > .loan-card,
+[data-theme="midnight"] .fin-layout-stacked-swipe > .inv-card {
+  background: #1f2041 !important;
+}
+[data-theme="ocean"] .meal-layout-stacked-swipe > .meal-section,
+[data-theme="ocean"] .fin-layout-stacked-swipe > .loan-card,
+[data-theme="ocean"] .fin-layout-stacked-swipe > .inv-card {
+  background: #0e2a37 !important;
+}
+[data-theme="forest"] .meal-layout-stacked-swipe > .meal-section,
+[data-theme="forest"] .fin-layout-stacked-swipe > .loan-card,
+[data-theme="forest"] .fin-layout-stacked-swipe > .inv-card {
+  background: #13221a !important;
+}
+</style>
+
+<style id="finance-tilted-stack-clean-v1">
+/* Finance stacked swipe: match Nutrition's clean tilted-card depth.
+   Only the active card exposes data; cards behind it remain solid silhouettes. */
+[data-swipe-deck].fin-layout-stacked-swipe > .loan-card,
+[data-swipe-deck].fin-layout-stacked-swipe > .inv-card {
+  overflow: hidden !important;
+  transform-origin: 50% 12% !important;
+  background: var(--bg-card) !important;
+}
+[data-swipe-deck].fin-layout-stacked-swipe > .loan-card[style*="pointer-events: none"]::after,
+[data-swipe-deck].fin-layout-stacked-swipe > .inv-card[style*="pointer-events: none"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 999;
+  border-radius: inherit;
+  background: var(--bg-card);
+  pointer-events: none;
+}
+</style>
+
+<style id="finance-active-height-tilted-stack-v2">
+/* Finance deep stack: active card is straight; only clean tilted edges of the next cards show. */
+[data-swipe-deck].fin-layout-stacked-swipe {
+  overflow: hidden !important;
+  padding: 10px 0 18px !important;
+}
+[data-swipe-deck].fin-layout-stacked-swipe > .loan-card,
+[data-swipe-deck].fin-layout-stacked-swipe > .inv-card {
+  transform-origin: 50% 10% !important;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+[data-swipe-deck].fin-layout-stacked-swipe > .loan-card[style*="pointer-events: none"],
+[data-swipe-deck].fin-layout-stacked-swipe > .inv-card[style*="pointer-events: none"] {
+  overflow: hidden !important;
+}
+</style>
 </head>
 <body>
 <div class="container">
 <div class="app-header">
   <div class="header-title">
-    <button class="back-btn" id="homeBackBtn" onclick="showHome()" title="Back to Home" aria-label="Back to Home" style="display:none;">←</button>
+    <button class="back-btn" id="homeBackBtn" onclick="showHome()" title="Back to Home" aria-label="Back to Home" style="display:none;">⌂</button>
     <h1 id="appTitle">Tracker</h1>
   </div>
   <div style="display:flex;gap:10px;align-items:center;">
@@ -1724,6 +1800,43 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 .fin-layout-stacked-swipe > :nth-child(even) { transform: rotate(1.8deg); z-index: 1; }
 .fin-deck-hint { text-align: center; color: var(--text-secondary); font-size: 0.7rem; margin: -4px 0 8px; }
 
+/* Finance vertical list: every loan/holding is visible in document flow. */
+.fin-layout-vertical-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 0 14px;
+}
+.fin-layout-vertical-stack > .loan-card,
+.fin-layout-vertical-stack > .inv-card {
+  position: relative;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  transform: none;
+  overflow: visible;
+}
+
+/* Finance Stacked Swipe now uses the same proportions/depth language as Nutrition. */
+[data-swipe-deck].fin-layout-stacked-swipe {
+  min-height: 0;
+  height: auto;
+  border-radius: 16px;
+  padding: 10px 0 12px;
+}
+[data-swipe-deck].fin-layout-stacked-swipe > .loan-card,
+[data-swipe-deck].fin-layout-stacked-swipe > .inv-card {
+  left: 6%;
+  width: 88%;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  border-radius: 16px;
+  box-shadow: 0 12px 25px rgba(0,0,0,0.35);
+}
+
 /* Interactive deck overrides: uniform card size and one-card-at-a-time swipe behavior. */
 [data-swipe-deck] {
   position: relative;
@@ -1753,12 +1866,11 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 [data-swipe-deck].is-dragging > .loan-card,
 [data-swipe-deck].is-dragging > .inv-card { transition: none; }
 [data-swipe-deck].fin-layout-stacked-card,
-[data-swipe-deck].fin-layout-detail-pager,
-[data-swipe-deck].fin-layout-stacked-swipe { height: 585px; }
+[data-swipe-deck].fin-layout-detail-pager { height: 585px; }
 [data-swipe-deck].fin-layout-detail-pager > .loan-card,
 [data-swipe-deck].fin-layout-detail-pager > .inv-card { left: 2%; width: 96%; }
 [data-swipe-deck].fin-layout-stacked-swipe > .loan-card,
-[data-swipe-deck].fin-layout-stacked-swipe > .inv-card { height: 570px; min-height: 570px; }
+[data-swipe-deck].fin-layout-stacked-swipe > .inv-card { height: auto; min-height: 0; }
 [data-swipe-deck].meal-layout-stacked-swipe {
   height: 425px;
   min-height: 425px;
@@ -1890,6 +2002,28 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
   .fin-sort { margin-left: 0; width: 100%; order: 99; }
 }
 </style>
+
+<!-- Selective Clear Data Modal -->
+<div class="modal-overlay" id="clearDataModal" onclick="if(event.target===this) closeClearDataModal()">
+<div class="modal">
+  <h3>🗑️ Clear Data</h3>
+  <p style="font-size:.82rem;color:var(--text-secondary);margin:-6px 0 14px;line-height:1.45;">Choose exactly which data you want to delete. Other sections will be kept.</p>
+  <div class="modal-form">
+    <select id="clearDataScope" aria-label="Choose data to delete">
+      <option value="" selected disabled>Select data to delete…</option>
+      <option value="nutrition">🥗 Nutrition only</option>
+      <option value="lending">🤝 Personal Finances — Lending only</option>
+      <option value="investments">📈 Personal Finances — Investments only</option>
+      <option value="finance">💰 All Personal Finances</option>
+      <option value="all">⚠️ All Data — Nutrition + Personal Finances</option>
+    </select>
+    <div class="modal-buttons">
+      <button class="btn" onclick="closeClearDataModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmSelectiveClear()">Delete Selected</button>
+    </div>
+  </div>
+</div>
+</div>
 
 <!-- Add Food to Meal Modal -->
 <div class="modal-overlay" id="addFoodModal">
@@ -2223,7 +2357,8 @@ function getMealLayoutLabel() {
 const FINANCE_LAYOUTS = [
   { id: 'stacked-card', label: 'Stacked Card Deck' },
   { id: 'detail-pager', label: 'Finance Detail Pager' },
-  { id: 'stacked-swipe', label: 'Stacked Swipe Deck' }
+  { id: 'stacked-swipe', label: 'Stacked Swipe Deck' },
+  { id: 'vertical-stack', label: 'Vertical Card List' }
 ];
 const FINANCE_LAYOUT_KEY = 'macroTrackerFinanceLayout';
 let financeLayout = 'stacked-card';
@@ -2264,7 +2399,7 @@ function renderFinanceLayoutPicker() {
     <button class="fin-layout-btn" onclick="toggleFinanceLayoutMenu(this)" title="Choose finance card layout" aria-label="Choose finance card layout" aria-expanded="false">▱</button>
     <div class="dropdown-menu fin-layout-menu">
       ${FINANCE_LAYOUTS.map(option => `<button class="dropdown-item ${option.id === financeLayout ? 'active' : ''}" onclick="setFinanceLayout('${option.id}')">
-        <span>${option.id === 'stacked-card' ? '▱' : option.id === 'detail-pager' ? '▤' : '▰'}</span>
+        <span>${option.id === 'stacked-card' ? '▱' : option.id === 'detail-pager' ? '▤' : option.id === 'vertical-stack' ? '☷' : '▰'}</span>
         <span>${escapeHtml(option.label)}</span>
       </button>`).join('')}
     </div>
@@ -2488,26 +2623,57 @@ function drawerNavigate(module, tab) {
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAppDrawer(); });
-document.addEventListener('touchstart', e => {
-  const drawer=document.getElementById('appDrawer');
-  if (!drawer || !drawer.classList.contains('open')) return;
-  drawerTouchStartX=e.changedTouches[0].clientX; drawerTouchStartY=e.changedTouches[0].clientY;
-}, {passive:true});
-document.addEventListener('touchend', e => {
-  const drawer=document.getElementById('appDrawer');
-  const dx=e.changedTouches[0].clientX-drawerTouchStartX, dy=e.changedTouches[0].clientY-drawerTouchStartY;
 
-  // When the drawer is open, swipe right/left only controls the drawer.
+// Global touch navigation:
+//  • left-edge swipe right  -> Home (same action as the Home button)
+//  • swipe right elsewhere -> open the current module drawer
+//  • swipe left with drawer open -> close the drawer
+// Vertical scrolling and gestures started on interactive controls are left untouched.
+let drawerTouchIgnore = false;
+function isSwipeInteractiveTarget(target) {
+  return !!(target && target.closest && target.closest(
+    'input, textarea, select, button, a, label, [contenteditable="true"], .swipe-deck, .meal-swipe, .loan-deck, .inv-deck'
+  ));
+}
+
+document.addEventListener('touchstart', e => {
+  if (!e.changedTouches || !e.changedTouches[0]) return;
+  drawerTouchStartX = e.changedTouches[0].clientX;
+  drawerTouchStartY = e.changedTouches[0].clientY;
+  drawerTouchIgnore = isSwipeInteractiveTarget(e.target);
+}, {passive:true});
+
+document.addEventListener('touchend', e => {
+  if (!e.changedTouches || !e.changedTouches[0]) return;
+  const drawer = document.getElementById('appDrawer');
+  const endX = e.changedTouches[0].clientX;
+  const endY = e.changedTouches[0].clientY;
+  const dx = endX - drawerTouchStartX;
+  const dy = endY - drawerTouchStartY;
+  const horizontal = Math.abs(dx) >= 75 && Math.abs(dx) > Math.abs(dy) * 1.35;
+
+  if (!horizontal || drawerTouchIgnore) return;
+
+  // Drawer already open: a clear swipe left closes it.
   if (drawer && drawer.classList.contains('open')) {
-    if (Math.abs(dx)>70 && Math.abs(dx)>Math.abs(dy)*1.3 && dx<0) closeAppDrawer();
+    if (dx < 0) closeAppDrawer();
     return;
   }
 
-  // iOS-style edge swipe: swipe from the left edge toward the right to go back
-  // from Nutrition/Personal Finances to the Tracker home screen.
-  if (typeof activeModule !== 'undefined' && activeModule && drawerTouchStartX < 45 &&
-      dx > 75 && Math.abs(dx)>Math.abs(dy)*1.3) {
+  if (typeof activeModule === 'undefined' || !activeModule) return;
+
+  // Reserve the extreme left edge for Home/back navigation so it never competes
+  // with the anywhere-on-screen drawer gesture.
+  if (drawerTouchStartX <= 25 && dx > 0) {
     showHome();
+    return;
+  }
+
+  // A right swipe beginning away from the extreme edge opens the menu for the
+  // module currently being viewed. Settings has no module drawer, so do nothing there.
+  if (dx > 0 && drawerTouchStartX > 25) {
+    if (activeModule === 'macro') openAppDrawer('macro');
+    else if (activeModule === 'finance') openAppDrawer('finance');
   }
 }, {passive:true});
 
@@ -2991,8 +3157,19 @@ function setupSwipeDecks() {
     const state = { index: 0, startX: 0, startY: 0, dragX: 0, dragging: false, locked: false, input: null };
 
     const render = (dragX = 0) => {
-      const stepX = isPager ? 0 : isDeepStack ? 20 : 16;
-      const stepY = isPager ? 0 : isDeepStack ? 15 : 12;
+      const isFinanceDeepStack = deck.classList.contains('fin-layout-stacked-swipe');
+      // Finance cards can have very different natural heights. If the cards behind the
+      // active one keep their own height, their lower sections remain visible below the
+      // front card. Match every background card to the active card's height so only the
+      // intended tilted edge/peek is visible, just like the Nutrition meal deck.
+      let financeActiveHeight = 0;
+      if (isFinanceDeepStack && cards[state.index]) {
+        cards[state.index].style.height = 'auto';
+        cards[state.index].style.minHeight = '0';
+        financeActiveHeight = cards[state.index].offsetHeight;
+      }
+      const stepX = isPager ? 0 : isFinanceDeepStack ? 13 : isDeepStack ? 20 : 16;
+      const stepY = isPager ? 0 : isFinanceDeepStack ? 12 : isDeepStack ? 15 : 12;
       cards.forEach((card, index) => {
         const relative = (index - state.index + cards.length) % cards.length;
         if (relative > 2) {
@@ -3003,14 +3180,27 @@ function setupSwipeDecks() {
           return;
         }
         const cardDrag = relative === 0 ? dragX : 0;
-        const baseRotation = isPager ? 0 : relative === 0 ? 0 : (relative % 2 ? -2 : 2);
+        if (isFinanceDeepStack) {
+          card.style.height = relative === 0 ? 'auto' : `${financeActiveHeight}px`;
+          card.style.minHeight = '0';
+          card.style.overflow = 'hidden';
+        }
+        const baseRotation = isPager ? 0 : relative === 0 ? 0 : (relative % 2 ? (isFinanceDeepStack ? -3.6 : -2) : (isFinanceDeepStack ? 3.6 : 2));
         const rotation = relative === 0 ? baseRotation + cardDrag / 18 : baseRotation;
-        const scale = isPager ? (relative === 0 ? 1 : 0.97) : 1 - relative * 0.045;
+        const scale = isPager ? (relative === 0 ? 1 : 0.97) : isFinanceDeepStack ? 1 - relative * 0.025 : 1 - relative * 0.045;
         card.style.opacity = relative === 0 ? '1' : relative === 1 ? '0.76' : '0.48';
         card.style.pointerEvents = relative === 0 ? 'auto' : 'none';
         card.style.zIndex = String(cards.length - relative);
         card.style.transform = `translate3d(${relative * stepX + cardDrag}px,${relative * stepY}px,0) rotate(${rotation}deg) scale(${scale})`;
       });
+      // Investment holdings contain only a few compact metrics. Size the deck to the
+      // current card instead of inheriting the 585px loan-card canvas.
+      if (deck.classList.contains('investment-deck') || deck.classList.contains('fin-layout-stacked-swipe')) {
+        const activeCard = cards[state.index];
+        const stackPeek = cards.length > 1 ? (isDeepStack ? 34 : 28) : 0;
+        const h = activeCard ? activeCard.offsetHeight + stackPeek + 22 : 0;
+        if (h > 0) deck.style.height = `${h}px`;
+      }
     };
 
     const resetDrag = () => {
@@ -4038,7 +4228,7 @@ function renderSettingsModule() {
       <label class="btn btn-success" style="flex:1;min-width:120px;padding:12px;text-align:center;cursor:pointer;">📥 Import / Restore <input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
     </div>
     <div style="margin-top:10px;">
-      <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+      <button class="btn btn-danger" onclick="openClearDataModal()">🗑️ Clear Data</button>
     </div>
   </div>`;
 
@@ -4084,17 +4274,49 @@ function importJSON(input) {
   reader.readAsText(file);
 }
 
-function clearAllData() {
-  if (confirm('Are you sure? This will delete ALL your data!')) {
-    localStorage.removeItem('calorieTrackerState');
+function openClearDataModal() {
+  const modal = document.getElementById('clearDataModal');
+  const select = document.getElementById('clearDataScope');
+  if (select) select.value = '';
+  if (modal) modal.classList.add('active');
+}
+
+function closeClearDataModal() {
+  document.getElementById('clearDataModal')?.classList.remove('active');
+}
+
+function confirmSelectiveClear() {
+  const scope = document.getElementById('clearDataScope')?.value;
+  if (!scope) { showToast('Please choose which data to delete', 'error'); return; }
+
+  const labels = {
+    nutrition: 'Nutrition data',
+    lending: 'Lending data',
+    investments: 'Investments data',
+    finance: 'all Personal Finances data',
+    all: 'ALL Nutrition and Personal Finances data'
+  };
+  if (!confirm(`Delete ${labels[scope]}? This cannot be undone.`)) return;
+
+  if (scope === 'nutrition' || scope === 'all') {
     state.foodDB = DEFAULT_FOODS.slice();
     state.dailyLogs = {};
     state.targets = { weight: 85, activity: 'Sedentary', maintenance: 2442, dailyCal: 1600, protein: 153, weeklyCal: 11550 };
-    state.finance = { loans: [], investments: [] };
-    saveState();
-    renderAll();
-    showToast('All data cleared');
+    state.bmi = '';
+    state.bmiHistory = [];
   }
+  if (scope === 'lending' || scope === 'finance' || scope === 'all') state.finance.loans = [];
+  if (scope === 'investments' || scope === 'finance' || scope === 'all') state.finance.investments = [];
+
+  saveState();
+  closeClearDataModal();
+  renderAll();
+  showToast(`${labels[scope]} cleared`);
+}
+
+// Kept for compatibility with any older saved/linked UI that still calls this function.
+function clearAllData() {
+  openClearDataModal();
 }
 
 // Re-renders whatever is currently open (called after import/clear/reset).
@@ -4633,7 +4855,7 @@ function renderLending() {
     }
 
     if (visible.length > 0) {
-      html += `<div class="fin-card-layout ${getFinanceLayoutClass()}" data-swipe-deck="finance">`;
+      html += `<div class="fin-card-layout ${getFinanceLayoutClass()}" ${financeLayout === 'vertical-stack' ? '' : 'data-swipe-deck="finance"'}>`;
     }
     visible.forEach(loan => {
       const c = calcs[loan.id];
@@ -5066,7 +5288,7 @@ function renderInvestments() {
       </div>`;
     } else {
       // Holdings are ordered by the selected sort control before being rendered into the deck.
-    html += `<div class="fin-card-layout ${getFinanceLayoutClass()}" data-swipe-deck="finance">`;
+    html += `<div class="fin-card-layout ${getFinanceLayoutClass()} investment-deck" ${financeLayout === 'vertical-stack' ? '' : 'data-swipe-deck="finance"'}>`;
     sorted.forEach(i => {
       const invested = Number(i.invested) || 0;
       const current = Number(i.current) || 0;
