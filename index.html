@@ -837,6 +837,33 @@ h3 { color: var(--text-primary); font-size: 1rem; margin: 8px 0 5px; }
 }
 </style>
 
+
+<style id="ios-solid-status-bar-cap-v1">
+/* iPhone Home Screen app: keep the entire notch/status-bar safe area opaque.
+   Uses the active theme background, so scrolled page content can never show
+   beside/behind the Face ID sensor area. */
+@supports (padding-top: env(safe-area-inset-top)) {
+  @media (display-mode: standalone) and (max-width: 600px) {
+    html {
+      background: var(--bg-primary) !important;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: calc(env(safe-area-inset-top, 0px) + 2px);
+      background: var(--bg-primary) !important;
+      z-index: 2147483647;
+      pointer-events: none;
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+    }
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="container">
